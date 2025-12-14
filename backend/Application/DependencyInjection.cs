@@ -20,6 +20,13 @@ public static class DependencyInjection
         services.AddScoped<ICompensationChangeService, CompensationChangeService>();
         services.AddScoped<IEmploymentContractService, EmploymentContractService>();
         services.AddScoped<IHealthService, HealthService>();
+        services.AddScoped<IAdminDelegationService, AdminDelegationService>();
+
+        // Background service for syncing employee status with leave requests
+        services.AddHostedService<EmployeeStatusSyncService>();
+
+        // Background service for simulating manager approval of leave requests
+        services.AddHostedService<LeaveRequestSimulationService>();
 
         return services;
     }

@@ -6,7 +6,10 @@ public interface IEmployeeRepository
 {
     Task<List<Employee>> GetNonTerminatedWithDetailsAsync(CancellationToken cancellationToken = default);
     Task<List<Employee>> GetNonTerminatedWithDetailsForOwnerAsync(string ownerAdminId, CancellationToken cancellationToken = default);
+    Task<List<Employee>> GetAllWithHierarchyAsync(CancellationToken cancellationToken = default);
     Task<Employee?> GetByIdWithDetailsAsync(int employeeId, CancellationToken cancellationToken = default);
+    Task<Employee?> GetByIdWithHierarchyAsync(int employeeId, CancellationToken cancellationToken = default);
+    Task<List<Employee>> GetSubordinatesAsync(int managerId, CancellationToken cancellationToken = default);
 
     Task<Employee?> FindByIdAsync(int employeeId, CancellationToken cancellationToken = default);
     Task<bool> EmailExistsAsync(string email, int? excludingEmployeeId = null, CancellationToken cancellationToken = default);

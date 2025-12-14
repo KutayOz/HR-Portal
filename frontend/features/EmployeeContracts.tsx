@@ -8,9 +8,10 @@ interface EmployeeContractsProps {
     readOnly?: boolean;
     readOnlyReason?: 'switch' | 'request';
     onRequestAccess?: () => Promise<void>;
+    onSalaryUpdated?: (employeeId: number, newSalary: number) => void;
 }
 
-export const EmployeeContracts: React.FC<EmployeeContractsProps> = ({ employeeId, readOnly = false, readOnlyReason, onRequestAccess }) => {
+export const EmployeeContracts: React.FC<EmployeeContractsProps> = ({ employeeId, readOnly = false, readOnlyReason, onRequestAccess, onSalaryUpdated }) => {
     const [contract, setContract] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [editing, setEditing] = useState(false);
@@ -72,13 +73,16 @@ export const EmployeeContracts: React.FC<EmployeeContractsProps> = ({ employeeId
         if (!contract) return;
         setSaving(true);
         try {
+            const newSalary = parseFloat(formData.salary.toString());
             await updateContract(contract.id, {
                 ...formData,
-                salary: parseFloat(formData.salary.toString()),
+                salary: newSalary,
                 workingHoursPerWeek: parseInt(formData.workingHoursPerWeek.toString())
             });
             setEditing(false);
             loadContract();
+            // Notify parent of salary change
+            onSalaryUpdated?.(employeeId, newSalary);
         } catch (error) {
             console.error('Failed to update contract', error);
         } finally {

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Modal } from '../components/Modal';
-import { createEmployee, getDepartments } from '../services/api';
-import { IDepartment } from '../types';
+import { createEmployee, getDepartments, getEmployees } from '../services/api';
+import { IDepartment, IEmployee } from '../types';
 
 interface EmployeeFormProps {
   isOpen: boolean;
@@ -11,6 +11,7 @@ interface EmployeeFormProps {
 
 export const EmployeeForm: React.FC<EmployeeFormProps> = ({ isOpen, onClose, onSuccess }) => {
   const [departments, setDepartments] = useState<IDepartment[]>([]);
+  const [employees, setEmployees] = useState<IEmployee[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   
@@ -23,6 +24,7 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ isOpen, onClose, onS
     hireDate: new Date().toISOString().split('T')[0],
     departmentId: '',
     jobId: '',
+    managerId: '',
     currentSalary: '',
     employmentStatus: 'Active',
     address: '',
@@ -35,6 +37,7 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ isOpen, onClose, onS
   useEffect(() => {
     if (isOpen) {
       getDepartments().then(setDepartments);
+      getEmployees('all').then(setEmployees);
     }
   }, [isOpen]);
 
@@ -50,6 +53,7 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ isOpen, onClose, onS
         ...formData,
         departmentId: parseInt(formData.departmentId.replace('D-', '')),
         jobId: parseInt(formData.jobId),
+        managerId: formData.managerId ? parseInt(formData.managerId.replace('E-', '')) : null,
         currentSalary: parseFloat(formData.currentSalary)
       };
 
@@ -67,6 +71,7 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ isOpen, onClose, onS
         hireDate: new Date().toISOString().split('T')[0],
         departmentId: '',
         jobId: '',
+        managerId: '',
         currentSalary: '',
         employmentStatus: 'Active',
         address: '',
@@ -227,6 +232,20 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ isOpen, onClose, onS
                 <option value="Active">Active</option>
                 <option value="OnLeave">On Leave</option>
                 <option value="Suspended">Suspended</option>
+              </select>
+            </div>
+            <div className="col-span-2">
+              <label className="block text-xs text-gray-400 mb-1">Reports To (Manager)</label>
+              <select
+                name="managerId"
+                value={formData.managerId}
+                onChange={handleChange}
+                className="w-full bg-black/50 border border-white/10 rounded px-3 py-1.5 text-sm text-white focus:border-neon-cyan focus:outline-none"
+              >
+                <option value="">No Manager (Top Level)</option>
+                {employees.map(emp => (
+                  <option key={emp.id} value={emp.id}>{emp.firstName} {emp.lastName} - {emp.jobTitle}</option>
+                ))}
               </select>
             </div>
           </div>

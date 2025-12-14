@@ -318,6 +318,14 @@ export const HiredCard: React.FC<HiredCardProps> = ({ app, onDelete, onViewDetai
     setEmployeeData(prev => (prev.phoneNumber ? prev : { ...prev, phoneNumber: candidatePhone }));
   }, [candidatePhone]);
 
+  // Update salary when offeredSalary changes (from Offer stage)
+  useEffect(() => {
+    const newSalary = app.offeredSalary ?? app.expectedSalary ?? 0;
+    if (newSalary > 0) {
+      setEmployeeData(prev => ({ ...prev, currentSalary: newSalary }));
+    }
+  }, [app.offeredSalary, app.expectedSalary]);
+
   const handleConfirm = () => {
     if (!showForm) {
       setShowForm(true);

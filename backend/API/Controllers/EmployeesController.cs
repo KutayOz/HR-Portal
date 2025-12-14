@@ -37,6 +37,13 @@ namespace API.Controllers
             return Ok(employee);
         }
 
+        [HttpGet("{id}/subordinates")]
+        public async Task<ActionResult<IEnumerable<EmployeeDto>>> GetSubordinates(string id)
+        {
+            var subordinates = await _employeeService.GetSubordinatesAsync(id);
+            return Ok(subordinates);
+        }
+
         [HttpPost]
         public async Task<ActionResult<EmployeeDto>> CreateEmployee([FromBody] CreateEmployeeDto dto)
         {

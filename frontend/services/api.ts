@@ -7,7 +7,8 @@ import {
   IAttendanceRecord,
   IAnnouncement,
   IAccessRequest,
-  ICandidate
+  ICandidate,
+  IAdminDelegation
 } from '../types';
 import { API_BASE_URL } from '../constants';
 
@@ -401,5 +402,31 @@ export const denyAccessRequest = async (id: string): Promise<IAccessRequest> => 
   return await fetchApi<IAccessRequest>(`/accessrequests/${id}/deny`, {
     method: 'POST',
     body: JSON.stringify({}),
+  });
+};
+
+// --- DELEGATIONS ---
+export const getOutgoingDelegations = async (): Promise<IAdminDelegation[]> => {
+  return await fetchApi<IAdminDelegation[]>('/delegations/outgoing');
+};
+
+export const getIncomingDelegations = async (): Promise<IAdminDelegation[]> => {
+  return await fetchApi<IAdminDelegation[]>('/delegations/incoming');
+};
+
+export const getDelegatedAdminIds = async (): Promise<string[]> => {
+  return await fetchApi<string[]>('/delegations/delegated-admins');
+};
+
+export const createDelegation = async (toAdminId: string, startDate: string, endDate: string, reason?: string): Promise<IAdminDelegation> => {
+  return await fetchApi<IAdminDelegation>('/delegations', {
+    method: 'POST',
+    body: JSON.stringify({ toAdminId, startDate, endDate, reason }),
+  });
+};
+
+export const revokeDelegation = async (id: number): Promise<void> => {
+  await fetchApi(`/delegations/${id}/revoke`, {
+    method: 'POST',
   });
 };

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Mail, Hash, Search, CalendarDays, User, ShieldCheck, Plus, Hexagon, Trash2 } from 'lucide-react';
+import { ArrowLeft, Mail, Hash, Search, CalendarDays, User, ShieldCheck, Plus, Hexagon, Trash2, Users, Clock } from 'lucide-react';
 import { GlassCard, NeonButton, SectionHeader, DecryptedText, StatusBadge } from '../components/ui';
 import { IEmployee } from '../types';
 import { createAccessRequest, getAccessOutbox, getEmployees, deleteEmployee } from '../services/api';
@@ -265,6 +265,12 @@ export const Employees: React.FC<EmployeesProps> = ({ onBack }) => {
     loadEmployees();
   }, [scope]);
 
+  const handleSalaryUpdated = (employeeId: number, newSalary: number) => {
+    const employeeKey = `E-${employeeId}`;
+    setEmployees(prev => prev.map(emp => emp.id === employeeKey ? { ...emp, currentSalary: newSalary } : emp));
+    setSelectedEmployee(prev => prev && prev.id === employeeKey ? { ...prev, currentSalary: newSalary } : prev);
+  };
+
   useEffect(() => {
     if (!selectedEmployee) {
       setEmployeeAccessAllowed(false);
@@ -276,9 +282,12 @@ export const Employees: React.FC<EmployeesProps> = ({ onBack }) => {
   useEffect(() => {
     const lowerQuery = searchQuery.toLowerCase();
     setFilteredEmployees(employees.filter(e =>
+      e.id.toLowerCase().includes(lowerQuery) ||
       e.firstName.toLowerCase().includes(lowerQuery) ||
       e.lastName.toLowerCase().includes(lowerQuery) ||
       e.jobTitle.toLowerCase().includes(lowerQuery) ||
+      (e.managerName?.toLowerCase().includes(lowerQuery)) ||
+      (e.departmentName?.toLowerCase().includes(lowerQuery)) ||
       e.skills.some(s => s.toLowerCase().includes(lowerQuery))
     ));
   }, [searchQuery, employees]);
@@ -383,7 +392,7 @@ export const Employees: React.FC<EmployeesProps> = ({ onBack }) => {
             className={`p-0 group relative border-t-4 ${getBorderColor(emp.status)} ${selectedIds.has(emp.id) ? 'ring-2 ring-neon-cyan' : ''}`}
           >
             {/* Selection Checkbox (top-left) & Delete Button (top-right) */}
-            {scope === 'yours' && (
+            {(scope === 'yours' || (scope === 'all' && emp.ownerAdminId === getAdminId())) && (
               <div className="absolute top-2 left-2 right-2 flex justify-between z-20">
                 <button
                   onClick={(e) => toggleSelection(emp.id, e)}
@@ -404,6 +413,27 @@ export const Employees: React.FC<EmployeesProps> = ({ onBack }) => {
                 </button>
               </div>
             )}
+            {/* Request Access button for other admin's employees */}
+            {scope === 'all' && emp.ownerAdminId && emp.ownerAdminId !== getAdminId() && (
+              <div className="absolute top-2 right-2 z-20">
+                <button
+                  onClick={async (e) => {
+                    e.stopPropagation();
+                    try {
+                      await createAccessRequest('Employee', emp.id, `Access request for employee ${emp.firstName} ${emp.lastName}`);
+                      alert('Access request sent!');
+                    } catch (err: any) {
+                      alert(err?.message || 'Failed to send access request');
+                    }
+                  }}
+                  className="px-2 py-1 text-[10px] rounded bg-neon-purple/20 border border-neon-purple/30 text-neon-purple hover:bg-neon-purple/30 transition-all"
+                  title="Request Edit Access"
+                >
+                  <ShieldCheck size={10} className="inline mr-1" />
+                  Request
+                </button>
+              </div>
+            )}
             <div className="p-6 flex flex-col items-center">
               <div className="relative w-24 h-24 mb-4">
                 {/* Avatar Glow */}
@@ -414,10 +444,27 @@ export const Employees: React.FC<EmployeesProps> = ({ onBack }) => {
               <h3 className="text-lg font-orbitron font-bold text-gray-900 dark:text-white">{emp.firstName} {emp.lastName}</h3>
               <p className="text-neon-purple font-rajdhani font-semibold mb-2">{emp.jobTitle}</p>
 
-              <div className="flex gap-2">
-                <span className="text-[10px] px-2 py-0.5 bg-white/5 rounded text-gray-400 font-mono">{emp.departmentId}</span>
-                <StatusBadge status={emp.status} />
+              <div className="flex flex-wrap gap-2 justify-center">
+                <span className="text-[10px] px-2 py-0.5 bg-white/5 rounded text-gray-400 font-mono">{emp.departmentName || emp.departmentId}</span>
+                {/* Show effective status: todayAttendanceStatus takes precedence if it's OnLeave/Absent/Late */}
+                {emp.todayAttendanceStatus && emp.todayAttendanceStatus !== 'Present' ? (
+                  <span className={`text-[10px] px-2 py-0.5 rounded font-mono ${
+                    emp.todayAttendanceStatus === 'Late' ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30' :
+                    emp.todayAttendanceStatus === 'Absent' ? 'bg-red-500/20 text-red-400 border border-red-500/30' :
+                    emp.todayAttendanceStatus === 'OnLeave' ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30' :
+                    'bg-gray-500/20 text-gray-400 border border-gray-500/30'
+                  }`}>
+                    {emp.todayAttendanceStatus}
+                  </span>
+                ) : (
+                  <StatusBadge status={emp.status} />
+                )}
               </div>
+              {(emp.subordinatesCount ?? 0) > 0 && (
+                <div className="mt-2 text-[10px] text-gray-500 flex items-center gap-1">
+                  <Users size={10} /> {emp.subordinatesCount} direct reports
+                </div>
+              )}
             </div>
           </GlassCard>
         ))}
@@ -513,19 +560,39 @@ export const Employees: React.FC<EmployeesProps> = ({ onBack }) => {
                         </div>
                         <div className="bg-gray-100 dark:bg-white/5 p-4 rounded border border-gray-200 dark:border-white/10">
                           <div className="text-[10px] font-mono text-gray-500 uppercase mb-1">Department</div>
-                          <div className="text-gray-900 dark:text-white font-orbitron">{selectedEmployee.departmentId}</div>
+                          <div className="text-gray-900 dark:text-white font-orbitron">{selectedEmployee.departmentName || selectedEmployee.departmentId}</div>
                         </div>
                         <div className="bg-gray-100 dark:bg-white/5 p-4 rounded border border-gray-200 dark:border-white/10">
                           <div className="flex items-center gap-2 text-[10px] font-mono text-gray-500 uppercase mb-1">
                             <User size={10} /> Reporting To
                           </div>
-                          <div className="text-neon-cyan font-bold">{selectedEmployee.managerId || "N/A"}</div>
+                          <div className="text-neon-cyan font-bold">{selectedEmployee.managerName || selectedEmployee.managerId || "N/A"}</div>
+                        </div>
+                        <div className="bg-gray-100 dark:bg-white/5 p-4 rounded border border-gray-200 dark:border-white/10">
+                          <div className="flex items-center gap-2 text-[10px] font-mono text-gray-500 uppercase mb-1">
+                            <Users size={10} /> Direct Reports
+                          </div>
+                          <div className="text-gray-900 dark:text-white">{selectedEmployee.subordinatesCount ?? 0} employees</div>
                         </div>
                         <div className="bg-gray-100 dark:bg-white/5 p-4 rounded border border-gray-200 dark:border-white/10">
                           <div className="flex items-center gap-2 text-[10px] font-mono text-gray-500 uppercase mb-1">
                             <CalendarDays size={10} /> Hire Date
                           </div>
                           <div className="text-gray-900 dark:text-white">{selectedEmployee.hireDate}</div>
+                        </div>
+                        <div className="bg-gray-100 dark:bg-white/5 p-4 rounded border border-gray-200 dark:border-white/10">
+                          <div className="flex items-center gap-2 text-[10px] font-mono text-gray-500 uppercase mb-1">
+                            <Clock size={10} /> Today's Status
+                          </div>
+                          <div className={`font-bold ${
+                            selectedEmployee.todayAttendanceStatus === 'Present' ? 'text-green-400' :
+                            selectedEmployee.todayAttendanceStatus === 'Late' ? 'text-yellow-400' :
+                            selectedEmployee.todayAttendanceStatus === 'Absent' ? 'text-red-400' :
+                            selectedEmployee.todayAttendanceStatus === 'OnLeave' ? 'text-purple-400' :
+                            'text-gray-400'
+                          }`}>
+                            {selectedEmployee.todayAttendanceStatus || 'No record'}
+                          </div>
                         </div>
                       </div>
 
@@ -592,6 +659,7 @@ export const Employees: React.FC<EmployeesProps> = ({ onBack }) => {
                         readOnly={scope === 'all' && !employeeAccessAllowed}
                         readOnlyReason={scope === 'all' && selectedEmployee.ownerAdminId === getAdminId() ? 'switch' : 'request'}
                         onRequestAccess={requestEmployeeAccess}
+                        onSalaryUpdated={handleSalaryUpdated}
                       />
                     </motion.div>
                   )}
@@ -608,6 +676,7 @@ export const Employees: React.FC<EmployeesProps> = ({ onBack }) => {
                         readOnly={scope === 'all' && !employeeAccessAllowed}
                         readOnlyReason={scope === 'all' && selectedEmployee.ownerAdminId === getAdminId() ? 'switch' : 'request'}
                         onRequestAccess={requestEmployeeAccess}
+                        onSalaryUpdated={handleSalaryUpdated}
                       />
                     </motion.div>
                   )}

@@ -144,6 +144,23 @@ public sealed class LeaveRequestService : ILeaveRequestService
         leaveRequest.ApprovedDate = DateTime.UtcNow;
         leaveRequest.UpdatedAt = DateTime.UtcNow;
 
+        // Sync employee status when leave is approved and active today
+        if (dto.Status == "Approved")
+        {
+            var today = DateTime.UtcNow.Date;
+            if (leaveRequest.StartDate.Date <= today && leaveRequest.EndDate.Date >= today)
+            {
+                var employee = await _employeeRepository.FindByIdAsync(leaveRequest.EmployeeId);
+                if (employee != null && employee.EmploymentStatus == "Active")
+                {
+                    employee.EmploymentStatus = "OnLeave";
+                    employee.UpdatedAt = DateTime.UtcNow;
+                    _logger.LogInformation("Employee {EmployeeId} status changed to OnLeave due to approved leave request {LeaveId}", 
+                        employee.EmployeeId, leaveRequestId.Value);
+                }
+            }
+        }
+
         await _leaveRequestRepository.SaveChangesAsync();
 
         var updated = await _leaveRequestRepository.GetByIdWithEmployeeAsync(leaveRequestId.Value);

@@ -1,6 +1,6 @@
 
 export type EmploymentStatus = 'Active' | 'Terminated' | 'OnLeave';
-export type LeaveStatus = 'Pending' | 'Approved' | 'Rejected';
+export type LeaveStatus = 'Pending' | 'Approved' | 'Rejected' | 'Declined';
 export type LeaveType = 'Annual' | 'Sick' | 'Maternity' | 'Remote';
 export type AttendanceStatus = 'Late' | 'Absent' | 'Present';
 export type ApplicationStatus = 'Applied' | 'Interview' | 'Offered' | 'Hired';
@@ -32,14 +32,18 @@ export interface IEmployee {
   email: string;
   phoneNumber: string;
   departmentId: string;
+  departmentName?: string;
   jobTitle: string;
-  managerId?: string; // ID of another employee
+  managerId?: string;
+  managerName?: string;
+  subordinatesCount?: number;
   status: EmploymentStatus;
-  currentSalary: number; // Protected view
+  todayAttendanceStatus?: string;
+  currentSalary: number;
   hireDate: string;
   terminationDate?: string;
   avatarUrl: string;
-  skills: string[]; // For search capability
+  skills: string[];
   ownerAdminId?: string;
 }
 
@@ -111,6 +115,17 @@ export interface IAnnouncement {
   content: string;
   priority: AnnouncementPriority;
   expiryDate: string;
+}
+
+export interface IAdminDelegation {
+  id: number;
+  fromAdminId: string;
+  toAdminId: string;
+  startDate: string;
+  endDate: string;
+  status: string;
+  reason?: string;
+  createdAt: string;
 }
 
 export type ViewState = 'dashboard' | 'employees' | 'recruitment' | 'leaves' | 'departments' | 'jobs' | 'statistics';

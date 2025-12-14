@@ -11,7 +11,10 @@ namespace Application.DTOs
         public string DepartmentName { get; set; }
         public string JobTitle { get; set; }
         public string? ManagerId { get; set; }
+        public string? ManagerName { get; set; }
+        public int SubordinatesCount { get; set; }
         public string Status { get; set; }
+        public string? TodayAttendanceStatus { get; set; }
         public decimal CurrentSalary { get; set; }
         public string HireDate { get; set; }
         public string? TerminationDate { get; set; }

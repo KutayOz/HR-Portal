@@ -9,12 +9,14 @@ interface EmployeeCompensationProps {
     readOnly?: boolean;
     readOnlyReason?: 'switch' | 'request';
     onRequestAccess?: () => Promise<void>;
+    onSalaryUpdated?: (employeeId: number, newSalary: number) => void;
 }
 
-export const EmployeeCompensation: React.FC<EmployeeCompensationProps> = ({ employeeId, currentSalary, readOnly = false, readOnlyReason, onRequestAccess }) => {
+export const EmployeeCompensation: React.FC<EmployeeCompensationProps> = ({ employeeId, currentSalary, readOnly = false, readOnlyReason, onRequestAccess, onSalaryUpdated }) => {
     const [changes, setChanges] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
+    const [saving, setSaving] = useState(false);
     const [formData, setFormData] = useState({
         newSalary: '',
         changeReason: 'Annual Increase',
@@ -42,21 +44,41 @@ export const EmployeeCompensation: React.FC<EmployeeCompensationProps> = ({ empl
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (saving) return;
+
+        const parsedSalary = parseFloat(formData.newSalary);
+        if (Number.isNaN(parsedSalary) || parsedSalary <= 0) {
+            alert('Please enter a valid new salary.');
+            return;
+        }
+
         try {
+            setSaving(true);
             const latestSalary = changes.length > 0 ? changes[0].newSalary : currentSalary;
 
-            await createCompensationChange({
+            const result = await createCompensationChange({
                 employeeId,
                 oldSalary: latestSalary,
-                newSalary: parseFloat(formData.newSalary),
+                newSalary: parsedSalary,
                 changeReason: formData.changeReason,
                 effectiveDate: formData.effectiveDate,
                 comments: formData.comments
             });
             setShowForm(false);
+            setFormData({
+                newSalary: '',
+                changeReason: 'Annual Increase',
+                effectiveDate: '',
+                comments: ''
+            });
             loadChanges();
-        } catch (error) {
+            const newSalary = result?.newSalary ?? parsedSalary;
+            onSalaryUpdated?.(employeeId, newSalary);
+        } catch (error: any) {
             console.error('Failed to record compensation change', error);
+            alert(error?.message || 'Compensation change kaydedilemedi.');
+        } finally {
+            setSaving(false);
         }
     };
 
@@ -122,8 +144,12 @@ export const EmployeeCompensation: React.FC<EmployeeCompensationProps> = ({ empl
                         onChange={e => setFormData({ ...formData, comments: e.target.value })}
                     />
                     <div className="flex justify-end">
-                        <button type="submit" className="bg-neon-green/20 text-neon-green px-4 py-2 rounded hover:bg-neon-green/30 transition-colors">
-                            Save Change
+                        <button
+                            type="submit"
+                            disabled={saving}
+                            className={`bg-neon-green/20 text-neon-green px-4 py-2 rounded hover:bg-neon-green/30 transition-colors ${saving ? 'opacity-60 cursor-not-allowed' : ''}`}
+                        >
+                            {saving ? 'Saving...' : 'Save Change'}
                         </button>
                     </div>
                 </form>

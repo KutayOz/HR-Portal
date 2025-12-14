@@ -37,6 +37,7 @@ namespace Data.Context
         public DbSet<Announcement> Announcements { get; set; }
         public DbSet<CompensationChange> CompensationChanges { get; set; }
         public DbSet<AccessRequest> AccessRequests { get; set; }
+        public DbSet<AdminDelegation> AdminDelegations { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -150,6 +151,13 @@ namespace Data.Context
                 entity.HasIndex(e => new { e.OwnerAdminId, e.Status });
                 entity.HasIndex(e => new { e.RequesterAdminId, e.Status });
                 entity.HasIndex(e => new { e.ResourceType, e.ResourceId });
+            });
+
+            modelBuilder.Entity<AdminDelegation>(entity =>
+            {
+                entity.HasIndex(e => new { e.FromAdminId, e.Status });
+                entity.HasIndex(e => new { e.ToAdminId, e.Status });
+                entity.HasIndex(e => new { e.ToAdminId, e.EndDate });
             });
         }
     }

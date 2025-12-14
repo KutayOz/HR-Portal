@@ -45,12 +45,24 @@ export const EmployeeAttendance: React.FC<EmployeeAttendanceProps> = ({ employee
         try {
             await createAttendanceRecord({
                 employeeId,
-                ...formData
+                date: formData.date,
+                checkInTime: formData.checkInTime,
+                checkOutTime: formData.checkOutTime || null,
+                status: formData.status,
+                remarks: formData.remarks || ''
             });
             setShowForm(false);
+            setFormData({
+                date: new Date().toISOString().split('T')[0],
+                checkInTime: '09:00',
+                checkOutTime: '17:00',
+                status: 'Present',
+                remarks: ''
+            });
             loadRecords();
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to record attendance', error);
+            alert(error?.message || 'Attendance kaydedilemedi. Lütfen tekrar deneyin.');
         }
     };
 

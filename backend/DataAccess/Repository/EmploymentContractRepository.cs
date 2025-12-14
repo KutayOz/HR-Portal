@@ -23,6 +23,13 @@ public sealed class EmploymentContractRepository : IEmploymentContractRepository
             .ToListAsync(cancellationToken);
     }
 
+    public Task<List<EmploymentContract>> GetByEmployeeIdForUpdateAsync(int employeeId, CancellationToken cancellationToken = default)
+    {
+        return _context.EmploymentContracts
+            .Where(c => c.EmployeeId == employeeId)
+            .ToListAsync(cancellationToken);
+    }
+
     public Task<EmploymentContract?> GetByIdWithEmployeeAsync(int contractId, CancellationToken cancellationToken = default)
     {
         return _context.EmploymentContracts

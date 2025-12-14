@@ -43,19 +43,25 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate, announcements 
         }
     };
 
-    useEffect(() => {
+    const loadData = () => {
         getDepartments().then(setDepartments);
         getLeaves().then(setLeaves);
         // Fetch ALL employees for accurate dashboard statistics
         getEmployees('all')
             .then(data => {
-                console.log('Dashboard - Loaded employees:', data.length, data[0]);
                 setEmployees(data);
             })
             .catch(error => {
                 console.error('Dashboard - Failed to load employees:', error);
                 setEmployees([]);
             });
+    };
+
+    useEffect(() => {
+        loadData();
+        // Auto-refresh every 5 seconds for real-time statistics
+        const interval = setInterval(loadData, 5000);
+        return () => clearInterval(interval);
     }, []);
 
     // Helper to extract numeric ID from department ID string
@@ -73,17 +79,18 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate, announcements 
     const activeEmployees = employees.filter(e => e.status === 'Active');
     const totalSalary = activeEmployees.reduce((sum, e) => sum + (e.currentSalary || 0), 0);
 
-    // Salary by department for chart
+    // Salary by department for chart - ALL departments
     const salaryByDept = departments.map(dept => {
         const deptIdNormalized = extractDeptId(dept.id);
         const deptEmployees = activeEmployees.filter(e => extractDeptId(e.departmentId) === deptIdNormalized);
         const totalDeptSalary = deptEmployees.reduce((sum, e) => sum + (e.currentSalary || 0), 0);
         return {
-            name: dept.name.length > 8 ? dept.name.substring(0, 8) + '..' : dept.name,
+            name: dept.name,
+            shortName: dept.name.length > 6 ? dept.name.substring(0, 6) + '..' : dept.name,
             salary: totalDeptSalary,
             employees: deptEmployees.length
         };
-    }).filter(d => d.salary > 0).sort((a, b) => b.salary - a.salary).slice(0, 5);
+    }).sort((a, b) => b.salary - a.salary);
 
     // Salary histogram data (distribution by salary ranges)
     const salaryRanges = [
@@ -217,22 +224,46 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate, announcements 
                         </div>
                     </div>
 
-                    <div style={{ height: 150 }}>
-                        {salaryByDept.length > 0 ? (
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={salaryByDept} layout="vertical">
-                                    <CartesianGrid strokeDasharray="3 3" stroke="#333" horizontal={false} />
-                                    <XAxis type="number" stroke="#666" fontSize={9} tickFormatter={(v) => formatCurrency(v)} />
-                                    <YAxis type="category" dataKey="name" stroke="#666" fontSize={9} width={60} />
-                                    <Tooltip
-                                        cursor={{ fill: 'rgba(255,255,255,0.05)' }}
-                                        contentStyle={{ backgroundColor: '#0a0a10', borderColor: '#0aff64' }}
-                                        itemStyle={{ color: '#fff' }}
-                                        formatter={(value: any) => [formatCurrency(value), 'Salary']}
-                                    />
-                                    <Bar dataKey="salary" fill="#0aff64" radius={[0, 4, 4, 0]} barSize={16} />
-                                </BarChart>
-                            </ResponsiveContainer>
+                    {/* Vertical Bar Chart - Horizontally Scrollable - All Departments */}
+                    <div className="overflow-x-auto custom-scrollbar" style={{ height: 150 }}>
+                        {departments.length > 0 ? (
+                            <div style={{ width: Math.max(departments.length * 60, 300), height: '100%' }}>
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={salaryByDept} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
+                                        <CartesianGrid strokeDasharray="3 3" stroke="#333" vertical={false} />
+                                        <XAxis 
+                                            dataKey="shortName" 
+                                            stroke="#666" 
+                                            fontSize={0}
+                                            tick={false}
+                                            axisLine={{ stroke: '#333' }}
+                                        />
+                                        <YAxis 
+                                            stroke="#666" 
+                                            fontSize={8} 
+                                            tickFormatter={(v) => formatCurrency(v)}
+                                            width={40}
+                                        />
+                                        <Tooltip
+                                            cursor={{ fill: 'rgba(255,255,255,0.1)' }}
+                                            contentStyle={{ backgroundColor: '#0a0a10', borderColor: '#0aff64', borderRadius: 8 }}
+                                            itemStyle={{ color: '#fff' }}
+                                            labelStyle={{ color: '#0aff64', fontWeight: 'bold' }}
+                                            formatter={(value: any, name: string, props: any) => [
+                                                `${formatCurrency(value)} (${props.payload.employees} employees)`,
+                                                'Total Salary'
+                                            ]}
+                                            labelFormatter={(label: any, payload: any) => payload?.[0]?.payload?.name || label}
+                                        />
+                                        <Bar 
+                                            dataKey="salary" 
+                                            fill="#0aff64" 
+                                            radius={[4, 4, 0, 0]} 
+                                            barSize={30}
+                                        />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
                         ) : (
                             <ResponsiveContainer width="100%" height="100%">
                                 <BarChart data={dataStats}>

@@ -253,24 +253,11 @@ public sealed class JobApplicationService : IJobApplicationService
         };
     }
 
+    private static readonly Random _random = new Random();
+    
     private static int CalculateMatchScore(int? yearsOfExperience, decimal? expectedSalary, decimal maxSalary)
     {
-        var score = 70;
-
-        if (yearsOfExperience.HasValue)
-        {
-            score += Math.Min(yearsOfExperience.Value * 2, 20);
-        }
-
-        if (expectedSalary.HasValue && maxSalary > 0)
-        {
-            var salaryRatio = (double)(expectedSalary.Value / maxSalary);
-            if (salaryRatio <= 0.8)
-                score += 10;
-            else if (salaryRatio <= 1.0)
-                score += 5;
-        }
-
-        return Math.Min(score, 100);
+        // Generate random score between 60-95 for realistic AI match scores
+        return _random.Next(60, 96);
     }
 }

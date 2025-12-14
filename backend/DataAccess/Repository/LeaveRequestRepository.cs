@@ -44,6 +44,17 @@ public sealed class LeaveRequestRepository : ILeaveRequestRepository
         return _context.LeaveRequests.FirstOrDefaultAsync(lr => lr.LeaveRequestId == leaveRequestId, cancellationToken);
     }
 
+    public Task<LeaveRequest?> FindActiveApprovedLeaveAsync(int employeeId, DateTime date, CancellationToken cancellationToken = default)
+    {
+        return _context.LeaveRequests
+            .Where(lr => lr.EmployeeId == employeeId &&
+                         lr.Status == "Approved" &&
+                         lr.StartDate.Date <= date.Date &&
+                         lr.EndDate.Date >= date.Date)
+            .AsNoTracking()
+            .FirstOrDefaultAsync(cancellationToken);
+    }
+
     public Task AddAsync(LeaveRequest leaveRequest, CancellationToken cancellationToken = default)
     {
         return _context.LeaveRequests.AddAsync(leaveRequest, cancellationToken).AsTask();

@@ -47,8 +47,8 @@ public sealed class EmployeeService : IEmployeeService
     {
         var employees = scope == OwnershipScope.Yours
             ? await GetOwnedEmployeesAsync()
-            : await _employeeRepository.GetNonTerminatedWithDetailsAsync();
-        return employees.Select(MapEmployee).ToList();
+            : await _employeeRepository.GetAllWithHierarchyAsync();
+        return employees.Select(e => MapEmployeeWithHierarchy(e)).ToList();
     }
 
     public async Task<EmployeeDto?> GetEmployeeAsync(string id)
@@ -59,8 +59,20 @@ public sealed class EmployeeService : IEmployeeService
             return null;
         }
 
-        var employee = await _employeeRepository.GetByIdWithDetailsAsync(employeeId.Value);
-        return employee == null ? null : MapEmployee(employee);
+        var employee = await _employeeRepository.GetByIdWithHierarchyAsync(employeeId.Value);
+        return employee == null ? null : MapEmployeeWithHierarchy(employee);
+    }
+
+    public async Task<List<EmployeeDto>> GetSubordinatesAsync(string managerId)
+    {
+        var empId = ParseEmployeeId(managerId);
+        if (empId == null)
+        {
+            return new List<EmployeeDto>();
+        }
+
+        var subordinates = await _employeeRepository.GetSubordinatesAsync(empId.Value);
+        return subordinates.Select(MapEmployee).ToList();
     }
 
     public async Task<(EmployeeDto? Result, string? ErrorMessage)> CreateEmployeeAsync(CreateEmployeeDto dto)
@@ -350,10 +362,51 @@ public sealed class EmployeeService : IEmployeeService
             Email = e.Email,
             PhoneNumber = e.PhoneNumber,
             DepartmentId = "D-" + e.DepartmentId.ToString("D2"),
-            DepartmentName = e.Department.DepartmentName,
-            JobTitle = e.Job.JobTitle,
+            DepartmentName = e.Department?.DepartmentName ?? string.Empty,
+            JobTitle = e.Job?.JobTitle ?? string.Empty,
             ManagerId = e.ManagerId.HasValue ? "E-" + e.ManagerId.Value : null,
+            ManagerName = null,
+            SubordinatesCount = 0,
             Status = e.EmploymentStatus,
+            TodayAttendanceStatus = null,
+            CurrentSalary = e.CurrentSalary,
+            HireDate = e.HireDate.ToString("yyyy-MM-dd"),
+            TerminationDate = e.TerminationDate.HasValue ? e.TerminationDate.Value.ToString("yyyy-MM-dd") : null,
+            AvatarUrl = "https://picsum.photos/200/200?random=" + e.EmployeeId,
+            Skills = new List<string>(),
+            OwnerAdminId = e.OwnerAdminId
+        };
+    }
+
+    private static EmployeeDto MapEmployeeWithHierarchy(Employee e)
+    {
+        var todayAttendance = e.AttendanceRecords?.FirstOrDefault();
+        string? todayStatus = null;
+        
+        if (e.EmploymentStatus == "OnLeave")
+        {
+            todayStatus = "OnLeave";
+        }
+        else if (todayAttendance != null)
+        {
+            todayStatus = todayAttendance.Status;
+        }
+
+        return new EmployeeDto
+        {
+            Id = "E-" + e.EmployeeId,
+            FirstName = e.FirstName,
+            LastName = e.LastName,
+            Email = e.Email,
+            PhoneNumber = e.PhoneNumber,
+            DepartmentId = "D-" + e.DepartmentId.ToString("D2"),
+            DepartmentName = e.Department?.DepartmentName ?? string.Empty,
+            JobTitle = e.Job?.JobTitle ?? string.Empty,
+            ManagerId = e.ManagerId.HasValue ? "E-" + e.ManagerId.Value : null,
+            ManagerName = e.Manager != null ? $"{e.Manager.FirstName} {e.Manager.LastName} (E-{e.Manager.EmployeeId})" : null,
+            SubordinatesCount = e.Subordinates?.Count ?? 0,
+            Status = e.EmploymentStatus,
+            TodayAttendanceStatus = todayStatus,
             CurrentSalary = e.CurrentSalary,
             HireDate = e.HireDate.ToString("yyyy-MM-dd"),
             TerminationDate = e.TerminationDate.HasValue ? e.TerminationDate.Value.ToString("yyyy-MM-dd") : null,

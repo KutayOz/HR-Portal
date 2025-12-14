@@ -25,6 +25,8 @@ import { NeonTicker } from './components/ui';
 import { getAccessInbox, getAnnouncements } from './services/api';
 import { AnnouncementForm } from './features/AnnouncementForm';
 import { AccessRequestsModal } from './features/AccessRequestsModal';
+import { AccessTimerWidget } from './features/AccessTimerWidget';
+import { IAccessRequest } from './types';
 
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -35,6 +37,7 @@ const App: React.FC = () => {
   const [showAnnouncementForm, setShowAnnouncementForm] = useState(false);
   const [showAccessRequests, setShowAccessRequests] = useState(false);
   const [pendingAccessCount, setPendingAccessCount] = useState(0);
+  const [accessNotification, setAccessNotification] = useState<string | null>(null);
   const [isDarkMode, setIsDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('theme');
@@ -203,7 +206,6 @@ const App: React.FC = () => {
                     >
                       <div className="text-right hidden sm:block">
                         <div className="text-sm font-bold text-gray-900 dark:text-white">Admin User</div>
-                        <div className="text-xs text-neon-purple">Level 9 Access</div>
                       </div>
                       <div className="w-10 h-10 rounded-full border-2 border-neon-purple p-0.5">
                         <img src="https://picsum.photos/200/200" alt="Admin" className="w-full h-full rounded-full object-cover" />
@@ -269,6 +271,33 @@ const App: React.FC = () => {
               onClose={() => setShowAccessRequests(false)}
               onUpdated={(count) => setPendingAccessCount(count)}
             />
+
+            {/* Access Timer Widget */}
+            <AccessTimerWidget
+              onNewGrant={(grants: IAccessRequest[]) => {
+                if (grants.length > 0) {
+                  const msg = grants.map(g => `Access granted: ${g.resourceType} ${g.resourceId}`).join('\n');
+                  setAccessNotification(msg);
+                  setTimeout(() => setAccessNotification(null), 5000);
+                }
+              }}
+            />
+
+            {/* Access Notification Toast */}
+            <AnimatePresence>
+              {accessNotification && (
+                <motion.div
+                  initial={{ opacity: 0, y: -50, x: '-50%' }}
+                  animate={{ opacity: 1, y: 0, x: '-50%' }}
+                  exit={{ opacity: 0, y: -50, x: '-50%' }}
+                  className="fixed top-20 left-1/2 z-50 px-6 py-3 bg-neon-green/20 border border-neon-green/50 rounded-lg shadow-lg backdrop-blur-sm"
+                >
+                  <div className="text-neon-green font-orbitron text-sm whitespace-pre-line">
+                    {accessNotification}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </motion.div>
         )}
       </AnimatePresence>

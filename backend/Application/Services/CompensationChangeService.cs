@@ -9,15 +9,18 @@ public sealed class CompensationChangeService : ICompensationChangeService
 {
     private readonly ICompensationChangeRepository _compensationChangeRepository;
     private readonly IEmployeeRepository _employeeRepository;
+    private readonly IEmploymentContractRepository _contractRepository;
     private readonly ILogger<CompensationChangeService> _logger;
 
     public CompensationChangeService(
         ICompensationChangeRepository compensationChangeRepository,
         IEmployeeRepository employeeRepository,
+        IEmploymentContractRepository contractRepository,
         ILogger<CompensationChangeService> logger)
     {
         _compensationChangeRepository = compensationChangeRepository;
         _employeeRepository = employeeRepository;
+        _contractRepository = contractRepository;
         _logger = logger;
     }
 
@@ -40,6 +43,12 @@ public sealed class CompensationChangeService : ICompensationChangeService
             return (null, "Employee not found");
         }
 
+        var effectiveDate = dto.EffectiveDate.Date;
+        if (effectiveDate.Kind != DateTimeKind.Utc)
+        {
+            effectiveDate = DateTime.SpecifyKind(effectiveDate, DateTimeKind.Utc);
+        }
+
         var changeAmount = dto.NewSalary - dto.OldSalary;
         var changePercentage = dto.OldSalary > 0 ? (changeAmount / dto.OldSalary) * 100 : 0;
 
@@ -51,7 +60,7 @@ public sealed class CompensationChangeService : ICompensationChangeService
             ChangeAmount = changeAmount,
             ChangePercentage = changePercentage,
             ChangeReason = dto.ChangeReason,
-            EffectiveDate = dto.EffectiveDate,
+            EffectiveDate = effectiveDate,
             ApprovedBy = dto.ApprovedBy,
             ApprovedDate = dto.ApprovedBy.HasValue ? DateTime.UtcNow : null,
             Comments = dto.Comments ?? string.Empty,
@@ -59,7 +68,30 @@ public sealed class CompensationChangeService : ICompensationChangeService
         };
 
         await _compensationChangeRepository.AddAsync(change);
-        await _compensationChangeRepository.SaveChangesAsync();
+        
+        // Update employee's current salary
+        employee.CurrentSalary = dto.NewSalary;
+        employee.UpdatedAt = DateTime.UtcNow;
+
+        // Also update the contract salary to keep them in sync (use tracked query)
+        var contracts = await _contractRepository.GetByEmployeeIdForUpdateAsync(dto.EmployeeId);
+        var activeContract = contracts.FirstOrDefault(c => c.IsActive);
+        if (activeContract != null)
+        {
+            activeContract.Salary = dto.NewSalary;
+            activeContract.UpdatedAt = DateTime.UtcNow;
+            _logger.LogInformation("Contract {ContractId} salary updated to {NewSalary} via compensation change", activeContract.ContractId, dto.NewSalary);
+        }
+
+        try
+        {
+            await _compensationChangeRepository.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error creating compensation change");
+            return (null, "Unable to save compensation change");
+        }
 
         var result = new CompensationChangeDto
         {
@@ -96,12 +128,18 @@ public sealed class CompensationChangeService : ICompensationChangeService
         var changeAmount = dto.NewSalary - dto.OldSalary;
         var changePercentage = dto.OldSalary > 0 ? (changeAmount / dto.OldSalary) * 100 : 0;
 
+        var effectiveDate = dto.EffectiveDate.Date;
+        if (effectiveDate.Kind != DateTimeKind.Utc)
+        {
+            effectiveDate = DateTime.SpecifyKind(effectiveDate, DateTimeKind.Utc);
+        }
+
         change.OldSalary = dto.OldSalary;
         change.NewSalary = dto.NewSalary;
         change.ChangeAmount = changeAmount;
         change.ChangePercentage = changePercentage;
         change.ChangeReason = dto.ChangeReason;
-        change.EffectiveDate = dto.EffectiveDate;
+        change.EffectiveDate = effectiveDate;
         change.ApprovedBy = dto.ApprovedBy;
         if (dto.ApprovedBy.HasValue && !change.ApprovedDate.HasValue)
         {
@@ -109,7 +147,32 @@ public sealed class CompensationChangeService : ICompensationChangeService
         }
         change.Comments = dto.Comments ?? string.Empty;
 
-        await _compensationChangeRepository.SaveChangesAsync();
+        // Update employee's current salary
+        var employee = await _employeeRepository.FindByIdAsync(change.EmployeeId);
+        if (employee != null)
+        {
+            employee.CurrentSalary = dto.NewSalary;
+            employee.UpdatedAt = DateTime.UtcNow;
+        }
+
+        // Also update the contract salary to keep them in sync (use tracked query)
+        var contracts = await _contractRepository.GetByEmployeeIdForUpdateAsync(change.EmployeeId);
+        var activeContract = contracts.FirstOrDefault(c => c.IsActive);
+        if (activeContract != null)
+        {
+            activeContract.Salary = dto.NewSalary;
+            activeContract.UpdatedAt = DateTime.UtcNow;
+        }
+
+        try
+        {
+            await _compensationChangeRepository.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating compensation change");
+            return (null, "Unable to update compensation change", false);
+        }
 
         return (MapChange(change), null, false);
     }

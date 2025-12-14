@@ -40,6 +40,12 @@ public sealed class AttendanceRecordService : IAttendanceRecordService
             return (null, "Employee not found");
         }
 
+        var date = dto.Date.Date;
+        if (date.Kind != DateTimeKind.Utc)
+        {
+            date = DateTime.SpecifyKind(date, DateTimeKind.Utc);
+        }
+
         if (!TimeSpan.TryParse(dto.CheckInTime, out var checkIn))
         {
             return (null, "Invalid CheckInTime format (HH:mm)");
@@ -67,7 +73,7 @@ public sealed class AttendanceRecordService : IAttendanceRecordService
         var record = new AttendanceRecord
         {
             EmployeeId = dto.EmployeeId,
-            Date = dto.Date,
+            Date = date,
             CheckInTime = checkIn,
             CheckOutTime = checkOut,
             TotalHours = totalHours,
@@ -84,8 +90,19 @@ public sealed class AttendanceRecordService : IAttendanceRecordService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error creating attendance record");
-            throw;
+            var fullMessage = ex.ToString();
+            if (fullMessage.Contains("IX_AttendanceRecords_EmployeeId_Date", StringComparison.OrdinalIgnoreCase) ||
+                fullMessage.Contains("23505", StringComparison.Ordinal) ||
+                fullMessage.Contains("duplicate key", StringComparison.OrdinalIgnoreCase))
+            {
+                return (null, "Attendance record already exists for this date");
+            }
+
+            return (null, "Unable to save attendance record");
         }
+
+        // Auto-sync employee status if attendance is for today and status is not Present
+        await SyncEmployeeStatusWithAttendanceAsync(employee, dto.Status, date);
 
         var result = new AttendanceRecordDto
         {
@@ -109,6 +126,12 @@ public sealed class AttendanceRecordService : IAttendanceRecordService
         if (record == null)
         {
             return (null, null, true);
+        }
+
+        var date = dto.Date.Date;
+        if (date.Kind != DateTimeKind.Utc)
+        {
+            date = DateTime.SpecifyKind(date, DateTimeKind.Utc);
         }
 
         if (!TimeSpan.TryParse(dto.CheckInTime, out var checkIn))
@@ -135,7 +158,7 @@ public sealed class AttendanceRecordService : IAttendanceRecordService
             totalHours = checkOut.Value - checkIn;
         }
 
-        record.Date = dto.Date;
+        record.Date = date;
         record.CheckInTime = checkIn;
         record.CheckOutTime = checkOut;
         record.TotalHours = totalHours;
@@ -143,7 +166,30 @@ public sealed class AttendanceRecordService : IAttendanceRecordService
         record.Remarks = dto.Remarks ?? string.Empty;
         record.UpdatedAt = DateTime.UtcNow;
 
-        await _attendanceRecordRepository.SaveChangesAsync();
+        try
+        {
+            await _attendanceRecordRepository.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating attendance record");
+            var fullMessage = ex.ToString();
+            if (fullMessage.Contains("IX_AttendanceRecords_EmployeeId_Date", StringComparison.OrdinalIgnoreCase) ||
+                fullMessage.Contains("23505", StringComparison.Ordinal) ||
+                fullMessage.Contains("duplicate key", StringComparison.OrdinalIgnoreCase))
+            {
+                return (null, "Attendance record already exists for this date", false);
+            }
+
+            return (null, "Unable to update attendance record", false);
+        }
+
+        // Auto-sync employee status if attendance is for today and status changed
+        var employee = await _employeeRepository.FindByIdAsync(record.EmployeeId);
+        if (employee != null)
+        {
+            await SyncEmployeeStatusWithAttendanceAsync(employee, dto.Status, date);
+        }
 
         var result = new AttendanceRecordDto
         {
@@ -189,5 +235,48 @@ public sealed class AttendanceRecordService : IAttendanceRecordService
             Status = r.Status,
             Remarks = r.Remarks
         };
+    }
+
+    private async Task SyncEmployeeStatusWithAttendanceAsync(Employee employee, string attendanceStatus, DateTime attendanceDate)
+    {
+        var today = DateTime.UtcNow.Date;
+        
+        // Only sync if the attendance record is for today
+        if (attendanceDate.Date != today)
+        {
+            return;
+        }
+
+        // Map attendance status to employee status
+        string? newEmployeeStatus = attendanceStatus switch
+        {
+            "Present" => "Active",
+            "Absent" => "Absent",
+            "Late" => "Late",
+            "HalfDay" => "HalfDay",
+            _ => null
+        };
+
+        if (newEmployeeStatus == null)
+        {
+            return;
+        }
+
+        // Only update if the status actually changes
+        if (employee.EmploymentStatus != newEmployeeStatus && 
+            (employee.EmploymentStatus == "Active" || 
+             employee.EmploymentStatus == "Absent" || 
+             employee.EmploymentStatus == "Late" || 
+             employee.EmploymentStatus == "HalfDay"))
+        {
+            var oldStatus = employee.EmploymentStatus;
+            employee.EmploymentStatus = newEmployeeStatus;
+            employee.UpdatedAt = DateTime.UtcNow;
+            await _employeeRepository.SaveChangesAsync();
+            
+            _logger.LogInformation(
+                "Employee {EmployeeId} status changed from {OldStatus} to {NewStatus} based on attendance",
+                employee.EmployeeId, oldStatus, newEmployeeStatus);
+        }
     }
 }

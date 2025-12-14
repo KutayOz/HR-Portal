@@ -19,6 +19,7 @@ public static class DependencyInjection
         services.AddScoped<Application.Repositories.ICompensationChangeRepository, CompensationChangeRepository>();
         services.AddScoped<Application.Repositories.IEmploymentContractRepository, EmploymentContractRepository>();
         services.AddScoped<Application.Repositories.IHealthCheckRepository, HealthCheckRepository>();
+        services.AddScoped<Application.Repositories.IAdminDelegationRepository, AdminDelegationRepository>();
 
         return services;
     }
