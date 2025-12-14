@@ -427,6 +427,7 @@ public class EmployeeService : IEmployeeService
 | **Announcement** | Duyurular | - |
 | **CompensationChange** | Maaş değişiklikleri | - |
 | **AccessRequest** | Erişim izin talepleri | - |
+| **AdminDelegation** | Yetki devri kayıtları | - |
 
 ### Access Control System
 
@@ -684,19 +685,26 @@ Frontend: `http://localhost:5173`
 - ✅ Global exception handling middleware
 - ✅ Ownership-based access control (OwnerAdminId)
 - ✅ Access request workflow (request/approve/deny)
+- ✅ Admin delegation system (delegate authority to other admins)
+- ✅ Leave request simulation (auto-approve/decline with manager comments)
+- ✅ Employee status sync service (OnLeave ↔ Active based on leave dates)
+- ✅ Compensation-to-contract salary sync
 - ✅ Auto-apply migrations on startup
 - ✅ Swagger API documentation
 
 ### Frontend Features
 - ✅ Modern React with TypeScript
 - ✅ Cyberpunk/Neon UI theme
-- ✅ Dashboard with statistics & charts
+- ✅ Dashboard with statistics & charts (auto-refresh every 5s)
 - ✅ Department management with jobs
 - ✅ Employee management (contracts, attendance, compensation)
 - ✅ Recruitment pipeline (candidates, applications)
-- ✅ Leave request management
+- ✅ Leave request management (Pending/Approved/Declined tabs)
 - ✅ All/Yours scope selector
 - ✅ Access request notifications
+- ✅ Access timer widget (countdown for granted access)
+- ✅ Admin delegation system (delegate responsibilities to other admins)
+- ✅ Real-time salary sync between contracts and compensation changes
 
 ---
 
