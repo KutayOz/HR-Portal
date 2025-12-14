@@ -16,6 +16,9 @@ namespace Common.Entity
         [MaxLength(500)]
         public string Description { get; set; }
 
+        [MaxLength(100)]
+        public string? OwnerAdminId { get; set; }
+
         [Required]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

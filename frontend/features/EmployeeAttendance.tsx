@@ -5,9 +5,12 @@ import { NeonButton } from '../components/ui';
 
 interface EmployeeAttendanceProps {
     employeeId: number;
+    readOnly?: boolean;
+    readOnlyReason?: 'switch' | 'request';
+    onRequestAccess?: () => Promise<void>;
 }
 
-export const EmployeeAttendance: React.FC<EmployeeAttendanceProps> = ({ employeeId }) => {
+export const EmployeeAttendance: React.FC<EmployeeAttendanceProps> = ({ employeeId, readOnly = false, readOnlyReason, onRequestAccess }) => {
     const [records, setRecords] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
@@ -30,6 +33,12 @@ export const EmployeeAttendance: React.FC<EmployeeAttendanceProps> = ({ employee
     useEffect(() => {
         loadRecords();
     }, [employeeId]);
+
+    useEffect(() => {
+        if (readOnly) {
+            setShowForm(false);
+        }
+    }, [readOnly]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -57,14 +66,31 @@ export const EmployeeAttendance: React.FC<EmployeeAttendanceProps> = ({ employee
 
     return (
         <div className="space-y-4">
+            {readOnly && (
+                <div className="bg-white/5 border border-white/10 rounded-lg p-3 text-xs text-gray-400 flex items-center justify-between">
+                    <span>
+                        {readOnlyReason === 'switch'
+                            ? 'Switch to "Yours" to modify.'
+                            : 'Read-only. Request access to modify.'}
+                    </span>
+                    {readOnlyReason === 'request' && onRequestAccess && (
+                        <NeonButton onClick={onRequestAccess} variant="ghost" className="px-3 py-1 text-xs">
+                            Request Access
+                        </NeonButton>
+                    )}
+                </div>
+            )}
+
             <div className="flex justify-between items-center">
                 <h3 className="text-lg font-orbitron text-neon-cyan">Attendance Records</h3>
-                <NeonButton onClick={() => setShowForm(!showForm)} icon={Plus}>
-                    Log Attendance
-                </NeonButton>
+                {!readOnly && (
+                    <NeonButton onClick={() => setShowForm(!showForm)} icon={Plus}>
+                        Log Attendance
+                    </NeonButton>
+                )}
             </div>
 
-            {showForm && (
+            {!readOnly && showForm && (
                 <form onSubmit={handleSubmit} className="bg-white/5 p-4 rounded-lg border border-white/10 space-y-3">
                     <div className="grid grid-cols-2 gap-3">
                         <input

@@ -1,7 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { ArrowLeft, Calendar, Plane, Laptop, Stethoscope, Plus } from 'lucide-react';
+import { ArrowLeft, Calendar, Plane, Laptop, Stethoscope, Plus, Search } from 'lucide-react';
 import { GlassCard, NeonButton, SectionHeader } from '../components/ui';
 import { getLeaves } from '../services/api';
 import { ILeaveRequest } from '../types';
@@ -14,16 +13,21 @@ interface LeavesProps {
 export const Leaves: React.FC<LeavesProps> = ({ onBack }) => {
   const [leaves, setLeaves] = useState<ILeaveRequest[]>([]);
   const [showAddForm, setShowAddForm] = useState(false);
-  const [viewMode, setViewMode] = useState<'list' | 'timeline'>('list');
-  const days = Array.from({ length: 30 }, (_, i) => i + 1); // 30 days simulation
+  const [scope, setScope] = useState<'all' | 'yours'>('yours');
+  const [searchQuery, setSearchQuery] = useState('');
 
+  const filteredLeaves = leaves.filter(leave =>
+    leave.employeeName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    leave.type?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    leave.status?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
   const loadLeaves = () => {
-    getLeaves().then(setLeaves);
+    getLeaves(scope).then(setLeaves);
   };
 
   useEffect(() => {
     loadLeaves();
-  }, []);
+  }, [scope]);
 
   const getLeaveIcon = (type: string) => {
     switch (type) {
@@ -51,43 +55,67 @@ export const Leaves: React.FC<LeavesProps> = ({ onBack }) => {
         onSuccess={loadLeaves}
       />
       
-      <div className="flex items-center justify-between mb-8">
-        <NeonButton onClick={onBack} variant="ghost" icon={ArrowLeft}>
-          Back
-        </NeonButton>
-        <NeonButton onClick={() => setShowAddForm(true)} icon={Plus}>
-          New Leave Request
-        </NeonButton>
+      <div className="flex items-center justify-between mb-8 gap-4">
+        <div className="flex items-center gap-4">
+          <NeonButton onClick={onBack} variant="ghost" icon={ArrowLeft}>
+            Back
+          </NeonButton>
+          <NeonButton
+            onClick={() => {
+              if (scope === 'all') {
+                alert('Switch to "Yours" to create leave requests.');
+                return;
+              }
+              setShowAddForm(true);
+            }}
+            icon={Plus}
+          >
+            New Request
+          </NeonButton>
+        </div>
+
+        {/* Search Box */}
+        <div className="relative w-64 md:w-96">
+          <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-neon-cyan">
+            <span className="font-mono text-sm">{'>'}</span>
+          </div>
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="block w-full p-2 pl-8 text-sm font-mono bg-black/50 border border-neon-cyan/30 rounded-sm text-white focus:ring-1 focus:ring-neon-cyan focus:border-neon-cyan placeholder-gray-600"
+            placeholder="SEARCH_REQUEST_"
+          />
+          <Search className="absolute right-3 top-2.5 text-neon-cyan opacity-50" size={14} />
+        </div>
       </div>
       
-      <SectionHeader title="Temporal Flux" subtitle="Leave Management" />
+      <SectionHeader title="Request Manager"/>
 
-      {/* View Mode Toggle */}
       <div className="flex items-center justify-between mb-4">
         <div className="text-xs text-gray-500 font-rajdhani uppercase tracking-[0.2em]">
-          View Mode
+          View
         </div>
         <div className="inline-flex rounded-lg border border-white/10 overflow-hidden text-xs">
           <button
             type="button"
-            onClick={() => setViewMode('list')}
-            className={`px-3 py-1 transition-colors ${viewMode === 'list' ? 'bg-neon-cyan/20 text-neon-cyan' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+            onClick={() => setScope('yours')}
+            className={`px-3 py-1 transition-colors ${scope === 'yours' ? 'bg-neon-cyan/20 text-neon-cyan' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
           >
-            List
+            Yours
           </button>
           <button
             type="button"
-            onClick={() => setViewMode('timeline')}
-            className={`px-3 py-1 transition-colors border-l border-white/10 ${viewMode === 'timeline' ? 'bg-neon-purple/20 text-neon-purple' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+            onClick={() => setScope('all')}
+            className={`px-3 py-1 transition-colors border-l border-white/10 ${scope === 'all' ? 'bg-neon-purple/20 text-neon-purple' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
           >
-            Timeline
+            All
           </button>
         </div>
       </div>
 
-      {viewMode === 'list' ? (
-        <GlassCard className="p-6">
-          {leaves.length === 0 ? (
+      <GlassCard className="p-6">
+          {filteredLeaves.length === 0 ? (
             <div className="text-center py-10 text-gray-500 text-sm">
               No leave requests yet. Use the "New Leave Request" button above to create one.
             </div>
@@ -103,7 +131,7 @@ export const Leaves: React.FC<LeavesProps> = ({ onBack }) => {
                   </tr>
                 </thead>
                 <tbody>
-                  {leaves.map((leave) => (
+                  {filteredLeaves.map((leave) => (
                     <tr key={leave.id} className="border-b border-white/5 last:border-0 hover:bg-white/5">
                       <td className="py-2 pr-4">
                         <div className="flex items-center gap-3">
@@ -144,90 +172,7 @@ export const Leaves: React.FC<LeavesProps> = ({ onBack }) => {
               </table>
             </div>
           )}
-        </GlassCard>
-      ) : (
-        <GlassCard className="p-8 overflow-hidden relative">
-          <h3 className="text-neon-cyan font-rajdhani font-bold mb-6 tracking-widest uppercase">October 2049</h3>
-          
-          <div className="overflow-x-auto pb-8 custom-scrollbar">
-            <div className="min-w-[1200px]">
-              
-              {/* Date Header */}
-              <div className="grid grid-cols-[200px_1fr] gap-4 mb-4 border-b border-white/10 pb-4">
-                <div className="text-gray-500 font-mono text-xs uppercase pt-2">Employee ID</div>
-                <div className="grid grid-cols-30 gap-1">
-                  {days.map(d => (
-                    <div key={d} className="text-center text-[10px] text-gray-500 font-mono">
-                      {d}
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Rows */}
-              <div className="space-y-6">
-                {leaves.map((leave, idx) => (
-                  <motion.div 
-                    key={leave.id}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: idx * 0.1 }}
-                    className="grid grid-cols-[200px_1fr] gap-4 items-center group hover:bg-white/5 rounded-lg p-2 transition-colors"
-                  >
-                    {/* Employee Info */}
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded bg-gray-800 flex items-center justify-center font-bold text-xs text-white border border-gray-600">
-                        {leave.employeeName.charAt(0)}
-                      </div>
-                      <div>
-                        <div className="text-xs text-white font-bold">{leave.employeeName}</div>
-                        <div className="text-[10px] text-gray-500">{leave.employeeId}</div>
-                      </div>
-                    </div>
-
-                    {/* Timeline Bar */}
-                    <div className="relative h-8 bg-white/5 rounded-full w-full">
-                      {/* Grid Lines for reference */}
-                      <div className="absolute inset-0 grid grid-cols-30 gap-1 pointer-events-none">
-                        {days.map(d => (
-                          <div key={d} className="border-r border-white/5 h-full last:border-0" />
-                        ))}
-                      </div>
-
-                      {/* The Leave Bar */}
-                      <motion.div
-                        layoutId={`leave-${leave.id}`}
-                        className={`absolute top-1 bottom-1 rounded-full flex items-center justify-center gap-2 text-[10px] font-bold shadow-lg border ${getLeaveColor(leave.type)}`}
-                        style={{ 
-                          // Simulating positions based on mock data dates (just hardcoded logic for visual demo)
-                          left: `${(parseInt(leave.startDate.split('-')[2]) / 30) * 100}%`,
-                          width: `${((parseInt(leave.endDate.split('-')[2]) - parseInt(leave.startDate.split('-')[2])) / 30) * 100}%`
-                        }}
-                      >
-                        <span className="hidden lg:inline truncate px-2">{leave.type.toUpperCase()}</span>
-                        {getLeaveIcon(leave.type)}
-                      </motion.div>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Legend */}
-          <div className="flex gap-6 mt-8 pt-4 border-t border-white/10 justify-end">
-            <div className="flex items-center gap-2 text-xs text-gray-400">
-              <div className="w-3 h-3 rounded-full bg-neon-purple"></div> Annual
-            </div>
-            <div className="flex items-center gap-2 text-xs text-gray-400">
-              <div className="w-3 h-3 rounded-full bg-neon-red"></div> Sick
-            </div>
-            <div className="flex items-center gap-2 text-xs text-gray-400">
-              <div className="w-3 h-3 rounded-full bg-neon-cyan"></div> Remote
-            </div>
-          </div>
-        </GlassCard>
-      )}
+      </GlassCard>
     </div>
   );
 };

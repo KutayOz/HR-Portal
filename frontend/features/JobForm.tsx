@@ -129,7 +129,7 @@ export const JobForm: React.FC<JobFormProps> = ({ isOpen, onClose, onSuccess, ed
                             value={formData.minSalary}
                             onChange={handleChange}
                             required
-                            min="0"
+                            step="any"
                             className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-neon-cyan focus:outline-none"
                         />
                     </div>
@@ -141,7 +141,7 @@ export const JobForm: React.FC<JobFormProps> = ({ isOpen, onClose, onSuccess, ed
                             value={formData.maxSalary}
                             onChange={handleChange}
                             required
-                            min="0"
+                            step="any"
                             className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-neon-cyan focus:outline-none"
                         />
                     </div>

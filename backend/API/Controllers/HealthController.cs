@@ -1,8 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Data.Context;
+using Application.Services;
 
 namespace API.Controllers
 {
@@ -10,11 +9,11 @@ namespace API.Controllers
     [Route("api/[controller]")]
     public class HealthController : ControllerBase
     {
-        private readonly HRPortalDbContext _context;
+        private readonly IHealthService _healthService;
 
-        public HealthController(HRPortalDbContext context)
+        public HealthController(IHealthService healthService)
         {
-            _context = context;
+            _healthService = healthService;
         }
 
         [HttpGet("db-check")]
@@ -22,7 +21,7 @@ namespace API.Controllers
         {
             try
             {
-                var canConnect = await _context.Database.CanConnectAsync();
+                var (canConnect, errorMessage) = await _healthService.CheckDatabaseAsync();
 
                 if (canConnect)
                 {

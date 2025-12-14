@@ -9,7 +9,6 @@ import {
   Settings,
   LogOut,
   User,
-  Megaphone
 } from 'lucide-react';
 import { ViewState, IAnnouncement } from './types';
 import { Dashboard } from './features/Dashboard';
@@ -18,10 +17,12 @@ import { Recruitment } from './features/Recruitment';
 import { Leaves } from './features/Leaves';
 import { Departments } from './features/Departments';
 import { Jobs } from './features/Jobs';
+import { Statistics } from './features/Statistics';
 import { Login } from './features/Login';
 import { NeonTicker } from './components/ui';
-import { getAnnouncements } from './services/api';
+import { getAccessInbox, getAnnouncements } from './services/api';
 import { AnnouncementForm } from './features/AnnouncementForm';
+import { AccessRequestsModal } from './features/AccessRequestsModal';
 
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -30,6 +31,8 @@ const App: React.FC = () => {
   const [time, setTime] = useState(new Date());
   const [announcements, setAnnouncements] = useState<IAnnouncement[]>([]);
   const [showAnnouncementForm, setShowAnnouncementForm] = useState(false);
+  const [showAccessRequests, setShowAccessRequests] = useState(false);
+  const [pendingAccessCount, setPendingAccessCount] = useState(0);
 
   // Clock Effect & Data
   const loadAnnouncements = () => {
@@ -59,12 +62,33 @@ const App: React.FC = () => {
     setIsAdminOpen(false);
     setIsAuthenticated(false);
     setCurrentView('dashboard');
+    try {
+      localStorage.removeItem('adminId');
+    } catch {
+    }
   };
+
+  const loadPendingAccessCount = async () => {
+    try {
+      const inbox = await getAccessInbox();
+      setPendingAccessCount(inbox.filter(r => r.status === 'Pending').length);
+    } catch {
+      setPendingAccessCount(0);
+    }
+  };
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setPendingAccessCount(0);
+      return;
+    }
+    loadPendingAccessCount();
+  }, [isAuthenticated]);
 
   const renderView = () => {
     switch (currentView) {
       case 'dashboard':
-        return <Dashboard onNavigate={setCurrentView} />;
+        return <Dashboard onNavigate={setCurrentView} announcements={announcements} onCreateAnnouncement={() => setShowAnnouncementForm(true)} onAnnouncementChange={loadAnnouncements} />;
       case 'employees':
         return <Employees onBack={() => setCurrentView('dashboard')} />;
       case 'recruitment':
@@ -75,6 +99,8 @@ const App: React.FC = () => {
         return <Departments onBack={() => setCurrentView('dashboard')} />;
       case 'jobs':
         return <Jobs onBack={() => setCurrentView('dashboard')} />;
+      case 'statistics':
+        return <Statistics onBack={() => setCurrentView('dashboard')} />;
       default:
         return <Dashboard onNavigate={setCurrentView} />;
     }
@@ -121,22 +147,19 @@ const App: React.FC = () => {
 
                 <div className="flex items-center gap-6">
                   {/* Live Clock */}
-                  <div className="hidden md:flex items-center gap-3 px-4 py-2 rounded border border-neon-green/30 bg-neon-green/5 text-neon-green font-mono tracking-widest shadow-[0_0_10px_rgba(10,255,100,0.1)]">
-                    <Clock size={16} className="animate-pulse" />
-                    <span className="text-lg font-bold">{formatTime(time)}</span>
+                  <div className="hidden md:flex items-center gap-2 text-neon-green font-mono text-xs tracking-[0.3em]">
+                    <Clock size={14} />
+                    <span>{formatTime(time)}</span>
                   </div>
 
                   <button
-                    onClick={() => setShowAnnouncementForm(true)}
-                    className="relative p-2 hover:bg-white/5 rounded-full transition-colors group"
-                    title="Create Announcement"
+                    className="relative p-2 hover:bg-white/5 rounded-full transition-colors"
+                    onClick={() => setShowAccessRequests(true)}
                   >
-                    <Megaphone className="w-5 h-5 text-gray-300 group-hover:text-neon-cyan" />
-                  </button>
-
-                  <button className="relative p-2 hover:bg-white/5 rounded-full transition-colors">
                     <Bell className="w-5 h-5 text-gray-300" />
-                    <span className="absolute top-2 right-2 w-2 h-2 bg-neon-red rounded-full shadow-[0_0_10px_#ff003c]"></span>
+                    {pendingAccessCount > 0 && (
+                      <span className="absolute top-2 right-2 w-2 h-2 bg-neon-red rounded-full shadow-[0_0_10px_#ff003c]"></span>
+                    )}
                   </button>
 
                   {/* Admin Dropdown */}
@@ -208,11 +231,17 @@ const App: React.FC = () => {
               onSuccess={loadAnnouncements}
             />
 
-            {/* System Ticker */}
-            <NeonTicker items={announcements} />
+            <AccessRequestsModal
+              isOpen={showAccessRequests}
+              onClose={() => setShowAccessRequests(false)}
+              onUpdated={(count) => setPendingAccessCount(count)}
+            />
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* System Ticker */}
+      {isAuthenticated && <NeonTicker items={announcements} />}
 
     </div>
   );

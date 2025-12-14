@@ -5,20 +5,65 @@ import {
   IJobApplication,
   ILeaveRequest,
   IAttendanceRecord,
-  IAnnouncement
+  IAnnouncement,
+  IAccessRequest,
+  ICandidate
 } from '../types';
 import { API_BASE_URL } from '../constants';
 
-// Helper function for API calls
+class ApiError extends Error {
+  status: number;
+  data: any;
+
+  constructor(message: string, status: number, data: any) {
+    super(message);
+    this.status = status;
+    this.data = data;
+  }
+}
+
+const getAdminId = (): string | null => {
+  try {
+    return localStorage.getItem('adminId');
+  } catch {
+    return null;
+  }
+};
+
+const withScope = (endpoint: string, scope?: 'all' | 'yours'): string => {
+  if (!scope) return endpoint;
+  const separator = endpoint.includes('?') ? '&' : '?';
+  return `${endpoint}${separator}scope=${encodeURIComponent(scope)}`;
+};
+
+// Helper function for API calls with timeout
+const fetchWithTimeout = async (url: string, options: RequestInit, timeout = 10000): Promise<Response> => {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
+  
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    });
+    return response;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+};
+
 const fetchApi = async <T>(endpoint: string, options?: RequestInit): Promise<T> => {
   try {
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    const adminId = getAdminId();
+    const response = await fetchWithTimeout(`${API_BASE_URL}${endpoint}`, {
       method: options?.method || 'GET',
       headers: {
         'Content-Type': 'application/json',
+        ...(adminId ? { 'X-Admin-Id': adminId } : {}),
         ...options?.headers,
       },
       credentials: 'include',
+      cache: 'no-store',
       ...options,
     });
 
@@ -28,10 +73,21 @@ const fetchApi = async <T>(endpoint: string, options?: RequestInit): Promise<T> 
       const baseMessage = errorData.message || `API error: ${response.status} ${response.statusText}`;
       const details = errorData.error ? `: ${errorData.error}` : '';
 
-      throw new Error(`${baseMessage}${details}`);
+      throw new ApiError(`${baseMessage}${details}`, response.status, errorData);
     }
 
-    return await response.json();
+    // Handle empty responses (e.g., 204 No Content or DELETE operations)
+    const contentType = response.headers.get('content-type');
+    if (response.status === 204 || !contentType || !contentType.includes('application/json')) {
+      return {} as T;
+    }
+
+    const text = await response.text();
+    if (!text) {
+      return {} as T;
+    }
+
+    return JSON.parse(text);
   } catch (error) {
     console.error(`Error with ${endpoint}:`, error);
     throw error;
@@ -39,37 +95,41 @@ const fetchApi = async <T>(endpoint: string, options?: RequestInit): Promise<T> 
 };
 
 // --- API Functions ---
-export const getEmployees = async (): Promise<IEmployee[]> => {
+export const getEmployees = async (scope?: 'all' | 'yours'): Promise<IEmployee[]> => {
   try {
-    return await fetchApi<IEmployee[]>('/employees');
-  } catch (error) {
-    console.error('Failed to fetch employees:', error);
-    // Return empty array as fallback
+    const result = await fetchApi<IEmployee[]>(withScope('/employees', scope));
+    return Array.isArray(result) ? result : [];
+  } catch (error: any) {
+    if (error?.name === 'AbortError') {
+      console.error('Employee fetch timed out');
+    } else {
+      console.error('Failed to fetch employees:', error);
+    }
     return [];
   }
 };
 
-export const getDepartments = async (): Promise<IDepartment[]> => {
+export const getDepartments = async (scope?: 'all' | 'yours'): Promise<IDepartment[]> => {
   try {
-    return await fetchApi<IDepartment[]>('/departments');
+    return await fetchApi<IDepartment[]>(withScope('/departments', scope));
   } catch (error) {
     console.error('Failed to fetch departments:', error);
     return [];
   }
 };
 
-export const getApplications = async (): Promise<IJobApplication[]> => {
+export const getApplications = async (scope?: 'all' | 'yours'): Promise<IJobApplication[]> => {
   try {
-    return await fetchApi<IJobApplication[]>('/jobapplications');
+    return await fetchApi<IJobApplication[]>(withScope('/jobapplications', scope));
   } catch (error) {
     console.error('Failed to fetch job applications:', error);
     return [];
   }
 };
 
-export const getLeaves = async (): Promise<ILeaveRequest[]> => {
+export const getLeaves = async (scope?: 'all' | 'yours'): Promise<ILeaveRequest[]> => {
   try {
-    return await fetchApi<ILeaveRequest[]>('/leaverequests');
+    return await fetchApi<ILeaveRequest[]>(withScope('/leaverequests', scope));
   } catch (error) {
     console.error('Failed to fetch leave requests:', error);
     return [];
@@ -129,6 +189,12 @@ export const deleteEmployee = async (id: string): Promise<void> => {
   });
 };
 
+export const deleteAnnouncement = async (id: string): Promise<void> => {
+  await fetchApi(`/announcements/${id}`, {
+    method: 'DELETE',
+  });
+};
+
 // --- DEPARTMENT CRUD Functions ---
 export const createDepartment = async (data: any): Promise<IDepartment> => {
   return await fetchApi<IDepartment>('/departments', {
@@ -180,14 +246,25 @@ export const deleteJob = async (id: number): Promise<void> => {
 };
 
 // --- CANDIDATE Functions ---
-export const getCandidates = async (): Promise<any[]> => {
-  return await fetchApi<any[]>('/candidates');
+export const getCandidates = async (): Promise<ICandidate[]> => {
+  return await fetchApi<ICandidate[]>('/candidates');
+};
+
+export const getCandidatesScoped = async (scope?: 'all' | 'yours'): Promise<ICandidate[]> => {
+  return await fetchApi<ICandidate[]>(withScope('/candidates', scope));
 };
 
 export const createCandidate = async (data: any): Promise<any> => {
   return await fetchApi<any>('/candidates', {
     method: 'POST',
     body: JSON.stringify(data),
+  });
+};
+
+export const deleteCandidate = async (id: number): Promise<void> => {
+  console.log('Deleting candidate with id:', id);
+  await fetchApi(`/candidates/${id}`, {
+    method: 'DELETE',
   });
 };
 
@@ -200,16 +277,34 @@ export const createJobApplication = async (data: any): Promise<any> => {
 };
 
 export const updateJobApplication = async (id: string, data: any): Promise<any> => {
-  return await fetchApi<any>(`/jobapplications/${id}`, {
+  // Backend uses camelCase JSON policy, so send camelCase keys
+  const payload: any = {
+    status: data.status ?? data.Status,
+    interviewNotes: data.interviewNotes ?? data.InterviewNotes ?? null,
+  };
+  
+  // Include offeredSalary if provided (from Offer stage)
+  if (data.offeredSalary !== undefined) {
+    payload.offeredSalary = data.offeredSalary;
+  }
+
+  console.log('updateJobApplication called with:', { id, payload });
+
+  const result = await fetchApi<any>(`/jobapplications/${id}`, {
     method: 'PUT',
-    body: JSON.stringify(data),
+    body: JSON.stringify(payload),
   });
+
+  console.log('updateJobApplication result:', result);
+  return result;
 };
 
 export const deleteJobApplication = async (id: string): Promise<void> => {
-  await fetchApi(`/jobapplications/${id}`, {
+  console.log('Deleting job application with id:', id);
+  const result = await fetchApi(`/jobapplications/${id}`, {
     method: 'DELETE',
   });
+  console.log('Delete result:', result);
 };
 
 // --- EMPLOYMENT CONTRACT Functions ---
@@ -284,5 +379,35 @@ export const updateAttendanceRecord = async (id: number, data: any): Promise<any
 export const deleteAttendanceRecord = async (id: number): Promise<void> => {
   await fetchApi(`/attendancerecords/${id}`, {
     method: 'DELETE',
+  });
+};
+
+// --- ACCESS REQUESTS ---
+export const getAccessInbox = async (): Promise<IAccessRequest[]> => {
+  return await fetchApi<IAccessRequest[]>('/accessrequests/inbox');
+};
+
+export const getAccessOutbox = async (): Promise<IAccessRequest[]> => {
+  return await fetchApi<IAccessRequest[]>('/accessrequests/outbox');
+};
+
+export const createAccessRequest = async (resourceType: string, resourceId: string, note?: string): Promise<IAccessRequest> => {
+  return await fetchApi<IAccessRequest>('/accessrequests', {
+    method: 'POST',
+    body: JSON.stringify({ resourceType, resourceId, note }),
+  });
+};
+
+export const approveAccessRequest = async (id: string, allowMinutes = 15): Promise<IAccessRequest> => {
+  return await fetchApi<IAccessRequest>(`/accessrequests/${id}/approve`, {
+    method: 'POST',
+    body: JSON.stringify({ allowMinutes }),
+  });
+};
+
+export const denyAccessRequest = async (id: string): Promise<IAccessRequest> => {
+  return await fetchApi<IAccessRequest>(`/accessrequests/${id}/deny`, {
+    method: 'POST',
+    body: JSON.stringify({}),
   });
 };

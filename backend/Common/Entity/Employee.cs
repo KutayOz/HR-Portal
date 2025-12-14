@@ -68,6 +68,9 @@ namespace Common.Entity
         [Required]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
+        [MaxLength(100)]
+        public string? OwnerAdminId { get; set; }
+
         public DateTime? UpdatedAt { get; set; }
 
         // Navigation properties

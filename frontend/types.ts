@@ -22,6 +22,7 @@ export interface IDepartment {
   name: string;
   description: string;
   jobs: IJob[];
+  ownerAdminId?: string;
 }
 
 export interface IEmployee {
@@ -39,6 +40,7 @@ export interface IEmployee {
   terminationDate?: string;
   avatarUrl: string;
   skills: string[]; // For search capability
+  ownerAdminId?: string;
 }
 
 export interface ILeaveRequest {
@@ -49,6 +51,7 @@ export interface ILeaveRequest {
   startDate: string;
   endDate: string;
   status: LeaveStatus;
+  ownerAdminId?: string;
 }
 
 export interface IAttendanceRecord {
@@ -65,10 +68,13 @@ export interface ICandidate {
   id: string;
   firstName: string;
   lastName: string;
+  email?: string;
+  phoneNumber?: string;
   skills: string[];
   linkedInUrl: string;
   resumeUrl: string;
   avatarUrl: string;
+  ownerAdminId?: string;
 }
 
 export interface IJobApplication {
@@ -80,7 +86,23 @@ export interface IJobApplication {
   status: ApplicationStatus;
   interviewNotes?: string;
   expectedSalary: number;
+  offeredSalary?: number;
+  jobId?: number;
   matchScore: number; // 0-100
+  ownerAdminId?: string;
+}
+
+export interface IAccessRequest {
+  id: string;
+  resourceType: string;
+  resourceId: string;
+  ownerAdminId: string;
+  requesterAdminId: string;
+  status: string;
+  requestedAt: string;
+  decidedAt?: string;
+  allowedUntil?: string;
+  note?: string;
 }
 
 export interface IAnnouncement {
@@ -91,4 +113,4 @@ export interface IAnnouncement {
   expiryDate: string;
 }
 
-export type ViewState = 'dashboard' | 'employees' | 'recruitment' | 'leaves' | 'departments' | 'jobs';
+export type ViewState = 'dashboard' | 'employees' | 'recruitment' | 'leaves' | 'departments' | 'jobs' | 'statistics';

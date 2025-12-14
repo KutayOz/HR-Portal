@@ -1,8 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Data.Context;
-using API.DTOs;
-using Common.Entity;
+using Application.DTOs;
+using Application.Services;
 
 namespace API.Controllers
 {
@@ -10,213 +8,80 @@ namespace API.Controllers
     [Route("api/[controller]")]
     public class EmploymentContractsController : ControllerBase
     {
-        private readonly HRPortalDbContext _context;
-        private readonly ILogger<EmploymentContractsController> _logger;
+        private readonly IEmploymentContractService _employmentContractService;
 
-        public EmploymentContractsController(HRPortalDbContext context, ILogger<EmploymentContractsController> logger)
+        public EmploymentContractsController(IEmploymentContractService employmentContractService)
         {
-            _context = context;
-            _logger = logger;
+            _employmentContractService = employmentContractService;
         }
 
         [HttpGet("employee/{employeeId}")]
         public async Task<ActionResult<IEnumerable<EmploymentContractDto>>> GetContractsByEmployee(int employeeId)
         {
-            try
-            {
-                var contracts = await _context.EmploymentContracts
-                    .Include(c => c.Employee)
-                    .Where(c => c.EmployeeId == employeeId)
-                    .Select(c => new EmploymentContractDto
-                    {
-                        Id = c.ContractId,
-                        EmployeeId = c.EmployeeId,
-                        EmployeeName = c.Employee.FirstName + " " + c.Employee.LastName,
-                        ContractType = c.ContractType,
-                        StartDate = c.StartDate,
-                        EndDate = c.EndDate,
-                        Salary = c.Salary,
-                        Currency = c.Currency,
-                        PaymentFrequency = c.PaymentFrequency,
-                        WorkingHoursPerWeek = c.WorkingHoursPerWeek,
-                        Terms = c.Terms,
-                        IsActive = c.IsActive,
-                        DocumentPath = c.DocumentPath
-                    })
-                    .ToListAsync();
-
-                return Ok(contracts);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error fetching contracts");
-                return StatusCode(500, new { message = "Error fetching contracts", error = ex.Message });
-            }
+            var contracts = await _employmentContractService.GetContractsByEmployeeAsync(employeeId);
+            return Ok(contracts);
         }
 
         [HttpGet("{id}")]
         public async Task<ActionResult<EmploymentContractDto>> GetContract(int id)
         {
-            try
-            {
-                var contract = await _context.EmploymentContracts
-                    .Include(c => c.Employee)
-                    .Where(c => c.ContractId == id)
-                    .Select(c => new EmploymentContractDto
-                    {
-                        Id = c.ContractId,
-                        EmployeeId = c.EmployeeId,
-                        EmployeeName = c.Employee.FirstName + " " + c.Employee.LastName,
-                        ContractType = c.ContractType,
-                        StartDate = c.StartDate,
-                        EndDate = c.EndDate,
-                        Salary = c.Salary,
-                        Currency = c.Currency,
-                        PaymentFrequency = c.PaymentFrequency,
-                        WorkingHoursPerWeek = c.WorkingHoursPerWeek,
-                        Terms = c.Terms,
-                        IsActive = c.IsActive,
-                        DocumentPath = c.DocumentPath
-                    })
-                    .FirstOrDefaultAsync();
+            var contract = await _employmentContractService.GetContractAsync(id);
 
-                if (contract == null)
-                    return NotFound();
-
-                return Ok(contract);
-            }
-            catch (Exception ex)
+            if (contract == null)
             {
-                _logger.LogError(ex, "Error fetching contract");
-                return StatusCode(500, new { message = "Error fetching contract", error = ex.Message });
+                return NotFound();
             }
+
+            return Ok(contract);
         }
 
         [HttpPost]
         public async Task<ActionResult<EmploymentContractDto>> CreateContract([FromBody] CreateEmploymentContractDto dto)
         {
-            try
+            var (result, error) = await _employmentContractService.CreateContractAsync(dto);
+
+            if (result == null)
             {
-                var employee = await _context.Employees.FindAsync(dto.EmployeeId);
-                if (employee == null)
-                    return BadRequest(new { message = "Employee not found" });
-
-                var contract = new EmploymentContract
-                {
-                    EmployeeId = dto.EmployeeId,
-                    ContractType = dto.ContractType,
-                    StartDate = dto.StartDate,
-                    EndDate = dto.EndDate,
-                    Salary = dto.Salary,
-                    Currency = dto.Currency ?? "USD",
-                    PaymentFrequency = dto.PaymentFrequency ?? "Monthly",
-                    WorkingHoursPerWeek = dto.WorkingHoursPerWeek,
-                    Terms = dto.Terms,
-                    DocumentPath = dto.DocumentPath,
-                    IsActive = true,
-                    CreatedAt = DateTime.UtcNow
-                };
-
-                _context.EmploymentContracts.Add(contract);
-                await _context.SaveChangesAsync();
-
-                var result = new EmploymentContractDto
-                {
-                    Id = contract.ContractId,
-                    EmployeeId = contract.EmployeeId,
-                    EmployeeName = employee.FirstName + " " + employee.LastName,
-                    ContractType = contract.ContractType,
-                    StartDate = contract.StartDate,
-                    EndDate = contract.EndDate,
-                    Salary = contract.Salary,
-                    Currency = contract.Currency,
-                    PaymentFrequency = contract.PaymentFrequency,
-                    WorkingHoursPerWeek = contract.WorkingHoursPerWeek,
-                    Terms = contract.Terms,
-                    IsActive = contract.IsActive,
-                    DocumentPath = contract.DocumentPath
-                };
-
-                return CreatedAtAction(nameof(GetContract), new { id = result.Id }, result);
+                return BadRequest(new { message = error ?? "Invalid request" });
             }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error creating contract");
-                return StatusCode(500, new { message = "Error creating contract", error = ex.Message });
-            }
+
+            return CreatedAtAction(nameof(GetContract), new { id = result.Id }, result);
         }
 
         [HttpPut("{id}")]
         public async Task<ActionResult<EmploymentContractDto>> UpdateContract(int id, [FromBody] UpdateEmploymentContractDto dto)
         {
-            try
+            var (result, error, notFound) = await _employmentContractService.UpdateContractAsync(id, dto);
+
+            if (notFound)
             {
-                var contract = await _context.EmploymentContracts
-                    .Include(c => c.Employee)
-                    .FirstOrDefaultAsync(c => c.ContractId == id);
-
-                if (contract == null)
-                    return NotFound(new { message = "Contract not found" });
-
-                contract.ContractType = dto.ContractType;
-                contract.StartDate = dto.StartDate;
-                contract.EndDate = dto.EndDate;
-                contract.Salary = dto.Salary;
-                contract.Currency = dto.Currency;
-                contract.PaymentFrequency = dto.PaymentFrequency;
-                contract.WorkingHoursPerWeek = dto.WorkingHoursPerWeek;
-                contract.Terms = dto.Terms;
-                contract.IsActive = dto.IsActive;
-                contract.DocumentPath = dto.DocumentPath;
-                contract.UpdatedAt = DateTime.UtcNow;
-
-                await _context.SaveChangesAsync();
-
-                var result = new EmploymentContractDto
-                {
-                    Id = contract.ContractId,
-                    EmployeeId = contract.EmployeeId,
-                    EmployeeName = contract.Employee.FirstName + " " + contract.Employee.LastName,
-                    ContractType = contract.ContractType,
-                    StartDate = contract.StartDate,
-                    EndDate = contract.EndDate,
-                    Salary = contract.Salary,
-                    Currency = contract.Currency,
-                    PaymentFrequency = contract.PaymentFrequency,
-                    WorkingHoursPerWeek = contract.WorkingHoursPerWeek,
-                    Terms = contract.Terms,
-                    IsActive = contract.IsActive,
-                    DocumentPath = contract.DocumentPath
-                };
-
-                return Ok(result);
+                return NotFound(new { message = "Contract not found" });
             }
-            catch (Exception ex)
+
+            if (result == null)
             {
-                _logger.LogError(ex, "Error updating contract");
-                return StatusCode(500, new { message = "Error updating contract", error = ex.Message });
+                return BadRequest(new { message = error ?? "Invalid request" });
             }
+
+            return Ok(result);
         }
 
         [HttpDelete("{id}")]
         public async Task<ActionResult> DeleteContract(int id)
         {
-            try
-            {
-                var contract = await _context.EmploymentContracts.FindAsync(id);
-                if (contract == null)
-                    return NotFound(new { message = "Contract not found" });
+            var (success, error, notFound) = await _employmentContractService.DeleteContractAsync(id);
 
-                _context.EmploymentContracts.Remove(contract);
-                await _context.SaveChangesAsync();
-
-                return Ok(new { message = "Contract deleted successfully" });
-            }
-            catch (Exception ex)
+            if (notFound)
             {
-                _logger.LogError(ex, "Error deleting contract");
-                return StatusCode(500, new { message = "Error deleting contract", error = ex.Message });
+                return NotFound(new { message = "Contract not found" });
             }
+
+            if (!success)
+            {
+                return BadRequest(new { message = error ?? "Unable to delete contract" });
+            }
+
+            return Ok(new { message = "Contract deleted successfully" });
         }
     }
 }

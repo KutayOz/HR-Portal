@@ -1,8 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Data.Context;
-using API.DTOs;
-using Common.Entity;
+using Application.DTOs;
+using Application.Services;
 
 namespace API.Controllers
 {
@@ -10,111 +8,44 @@ namespace API.Controllers
     [Route("api/[controller]")]
     public class AnnouncementsController : ControllerBase
     {
-        private readonly HRPortalDbContext _context;
-        private readonly ILogger<AnnouncementsController> _logger;
+        private readonly IAnnouncementService _announcementService;
 
-        public AnnouncementsController(HRPortalDbContext context, ILogger<AnnouncementsController> logger)
+        public AnnouncementsController(IAnnouncementService announcementService)
         {
-            _context = context;
-            _logger = logger;
+            _announcementService = announcementService;
         }
 
         [HttpGet]
         public async Task<ActionResult<IEnumerable<AnnouncementDto>>> GetAnnouncements()
         {
-            try
-            {
-                var announcements = await _context.Announcements
-                    .Where(a => a.IsActive && (!a.ExpiryDate.HasValue || a.ExpiryDate.Value > DateTime.UtcNow))
-                    .OrderByDescending(a => a.Priority)
-                    .ThenByDescending(a => a.PublishDate)
-                    .Select(a => new AnnouncementDto
-                    {
-                        Id = "ANN-" + a.AnnouncementId.ToString(),
-                        Title = a.Title,
-                        Content = a.Content,
-                        Priority = a.Priority,
-                        ExpiryDate = a.ExpiryDate.HasValue ? a.ExpiryDate.Value.ToString("yyyy-MM-dd") : ""
-                    })
-                    .ToListAsync();
-
-                return Ok(announcements);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error fetching announcements");
-                return StatusCode(500, new { message = "Error fetching announcements", error = ex.Message });
-            }
+            var announcements = await _announcementService.GetAnnouncementsAsync();
+            return Ok(announcements);
         }
 
         [HttpGet("{id}")]
         public async Task<ActionResult<AnnouncementDto>> GetAnnouncement(string id)
         {
-            try
-            {
-                var announcementId = int.Parse(id.Replace("ANN-", ""));
-                
-                var announcement = await _context.Announcements
-                    .Where(a => a.AnnouncementId == announcementId)
-                    .Select(a => new AnnouncementDto
-                    {
-                        Id = "ANN-" + a.AnnouncementId.ToString(),
-                        Title = a.Title,
-                        Content = a.Content,
-                        Priority = a.Priority,
-                        ExpiryDate = a.ExpiryDate.HasValue ? a.ExpiryDate.Value.ToString("yyyy-MM-dd") : ""
-                    })
-                    .FirstOrDefaultAsync();
+            var announcement = await _announcementService.GetAnnouncementAsync(id);
 
-                if (announcement == null)
-                    return NotFound();
-
-                return Ok(announcement);
-            }
-            catch (Exception ex)
+            if (announcement == null)
             {
-                _logger.LogError(ex, "Error fetching announcement");
-                return StatusCode(500, new { message = "Error fetching announcement", error = ex.Message });
+                return NotFound();
             }
+
+            return Ok(announcement);
         }
 
         [HttpPost]
         public async Task<ActionResult<AnnouncementDto>> CreateAnnouncement([FromBody] CreateAnnouncementDto dto)
         {
-            try
+            var (result, error) = await _announcementService.CreateAnnouncementAsync(dto);
+
+            if (result == null)
             {
-                var announcement = new Announcement
-                {
-                    Title = dto.Title,
-                    Content = dto.Content,
-                    AnnouncementType = dto.AnnouncementType,
-                    Priority = dto.Priority,
-                    PublishDate = string.IsNullOrEmpty(dto.PublishDate) ? DateTime.UtcNow : DateTime.Parse(dto.PublishDate),
-                    ExpiryDate = string.IsNullOrEmpty(dto.ExpiryDate) ? null : DateTime.Parse(dto.ExpiryDate),
-                    TargetDepartmentId = dto.TargetDepartmentId,
-                    IsActive = true,
-                    CreatedAt = DateTime.UtcNow
-                };
-
-                _context.Announcements.Add(announcement);
-                await _context.SaveChangesAsync();
-
-                var result = new AnnouncementDto
-                {
-                    Id = "ANN-" + announcement.AnnouncementId.ToString(),
-                    Title = announcement.Title,
-                    Content = announcement.Content,
-                    Priority = announcement.Priority,
-                    ExpiryDate = announcement.ExpiryDate.HasValue ? announcement.ExpiryDate.Value.ToString("yyyy-MM-dd") : ""
-                };
-
-                return CreatedAtAction(nameof(GetAnnouncement), new { id = result.Id }, result);
+                return BadRequest(new { message = error ?? "Invalid request" });
             }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error creating announcement");
-                return StatusCode(500, new { message = "Error creating announcement", error = ex.Message });
-            }
+
+            return CreatedAtAction(nameof(GetAnnouncement), new { id = result.Id }, result);
         }
     }
 }

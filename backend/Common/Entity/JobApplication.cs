@@ -28,6 +28,9 @@ namespace Common.Entity
         [Column(TypeName = "decimal(18,2)")]
         public decimal? ExpectedSalary { get; set; }
 
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal? OfferedSalary { get; set; }
+
         public DateTime? InterviewDate { get; set; }
 
         [MaxLength(1000)]
@@ -40,6 +43,9 @@ namespace Common.Entity
 
         [Required]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        [MaxLength(100)]
+        public string? OwnerAdminId { get; set; }
 
         public DateTime? UpdatedAt { get; set; }
 

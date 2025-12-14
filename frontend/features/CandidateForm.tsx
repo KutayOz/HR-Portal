@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Modal } from '../components/Modal';
-import { createCandidate, createJobApplication, getJobs } from '../services/api';
+import { createCandidate, createJobApplication, getJobs, getDepartments } from '../services/api';
+import { IDepartment, IJob } from '../types';
 
 interface CandidateFormProps {
   isOpen: boolean;
@@ -11,12 +12,16 @@ interface CandidateFormProps {
 export const CandidateForm: React.FC<CandidateFormProps> = ({ isOpen, onClose, onSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [hasJobs, setHasJobs] = useState(true);
+  const [departments, setDepartments] = useState<IDepartment[]>([]);
+  const [jobs, setJobs] = useState<IJob[]>([]);
+  const [filteredJobs, setFilteredJobs] = useState<IJob[]>([]);
 
   useEffect(() => {
     if (isOpen) {
-      getJobs().then(jobs => {
-        setHasJobs(Array.isArray(jobs) && jobs.length > 0);
+      Promise.all([getDepartments(), getJobs()]).then(([depts, allJobs]) => {
+        setDepartments(depts);
+        setJobs(allJobs);
+        setFilteredJobs(allJobs);
       });
     }
   }, [isOpen]);
@@ -26,14 +31,29 @@ export const CandidateForm: React.FC<CandidateFormProps> = ({ isOpen, onClose, o
     lastName: '',
     email: '',
     phoneNumber: '',
-    skills: '',
     linkedInProfile: '',
     resumePath: '',
-    yearsOfExperience: ''
+    departmentId: '',
+    jobId: ''
   });
 
+  // Filter jobs when department changes
+  useEffect(() => {
+    if (formData.departmentId) {
+      const deptId = parseInt(formData.departmentId.replace('D-', ''), 10);
+      setFilteredJobs(jobs.filter(j => j.departmentId === deptId));
+      // Reset job selection if not in filtered list
+      const currentJobInDept = jobs.find(j => j.id === parseInt(formData.jobId) && j.departmentId === deptId);
+      if (!currentJobInDept) {
+        setFormData(prev => ({ ...prev, jobId: '' }));
+      }
+    } else {
+      setFilteredJobs(jobs);
+    }
+  }, [formData.departmentId, jobs]);
+
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
@@ -50,42 +70,34 @@ export const CandidateForm: React.FC<CandidateFormProps> = ({ isOpen, onClose, o
         return;
       }
 
-      const years = formData.yearsOfExperience.trim()
-        ? parseInt(formData.yearsOfExperience.trim(), 10)
-        : undefined;
-
       const data = {
         firstName: formData.firstName.trim(),
         lastName: formData.lastName.trim(),
         email: formData.email.trim(),
         phoneNumber: formData.phoneNumber.trim() || null,
-        skills: formData.skills.trim() || null,
         linkedInProfile: formData.linkedInProfile.trim() || null,
         resumePath: formData.resumePath.trim() || null,
-        yearsOfExperience: Number.isNaN(years) ? undefined : years,
       };
 
       const createdCandidate = await createCandidate(data);
 
-      try {
-        const jobs = await getJobs();
-
-        if (Array.isArray(jobs) && jobs.length > 0 && createdCandidate?.id) {
+      // Create job application with selected job
+      if (createdCandidate?.id && formData.jobId) {
+        try {
           const numericCandidateId = parseInt(String(createdCandidate.id).replace('C-', ''), 10);
-          const defaultJob = jobs[0] as any;
-          const defaultJobId = defaultJob?.id;
+          const jobId = parseInt(formData.jobId, 10);
 
-          if (!Number.isNaN(numericCandidateId) && typeof defaultJobId === 'number') {
+          if (!Number.isNaN(numericCandidateId) && !Number.isNaN(jobId)) {
             await createJobApplication({
               candidateId: numericCandidateId,
-              jobId: defaultJobId,
+              jobId: jobId,
               interviewNotes: null,
               expectedSalary: null,
             });
           }
+        } catch (jobErr) {
+          console.error('Failed to create job application for candidate', jobErr);
         }
-      } catch (jobErr) {
-        console.error('Failed to create default job application for candidate', jobErr);
       }
 
       onSuccess();
@@ -96,10 +108,10 @@ export const CandidateForm: React.FC<CandidateFormProps> = ({ isOpen, onClose, o
         lastName: '',
         email: '',
         phoneNumber: '',
-        skills: '',
         linkedInProfile: '',
         resumePath: '',
-        yearsOfExperience: ''
+        departmentId: '',
+        jobId: ''
       });
     } catch (err: any) {
       setError(err.message || 'Failed to create candidate');
@@ -117,12 +129,46 @@ export const CandidateForm: React.FC<CandidateFormProps> = ({ isOpen, onClose, o
           </div>
         )}
 
-        {!hasJobs && (
+        {jobs.length === 0 && (
           <div className="bg-yellow-500/10 border border-yellow-500/30 text-yellow-500 px-4 py-3 rounded-lg">
-            Warning: No jobs found. Candidate will be created but not assigned to any job application.
+            Warning: No jobs found. Please create a job position first.
           </div>
         )}
 
+        {/* Department & Job Selection */}
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">Department</label>
+            <select
+              name="departmentId"
+              value={formData.departmentId}
+              onChange={handleChange}
+              className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-neon-cyan focus:outline-none"
+            >
+              <option value="">All Departments</option>
+              {departments.map(dept => (
+                <option key={dept.id} value={dept.id}>{dept.name}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">Position *</label>
+            <select
+              name="jobId"
+              value={formData.jobId}
+              onChange={handleChange}
+              required
+              className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-neon-cyan focus:outline-none"
+            >
+              <option value="">Select Position</option>
+              {filteredJobs.map(job => (
+                <option key={job.id} value={job.id}>{job.title}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* Personal Info */}
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">First Name *</label>
@@ -169,18 +215,6 @@ export const CandidateForm: React.FC<CandidateFormProps> = ({ isOpen, onClose, o
           </div>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-300 mb-2">Skills (comma separated)</label>
-          <textarea
-            name="skills"
-            value={formData.skills}
-            onChange={handleChange}
-            rows={3}
-            className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-neon-cyan focus:outline-none resize-none"
-            placeholder="e.g. React, .NET, PostgreSQL"
-          />
-        </div>
-
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">LinkedIn URL</label>
@@ -202,18 +236,6 @@ export const CandidateForm: React.FC<CandidateFormProps> = ({ isOpen, onClose, o
               className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-neon-cyan focus:outline-none"
             />
           </div>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-300 mb-2">Years of Experience</label>
-          <input
-            type="number"
-            name="yearsOfExperience"
-            value={formData.yearsOfExperience}
-            onChange={handleChange}
-            min="0"
-            className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-neon-cyan focus:outline-none"
-          />
         </div>
 
         <div className="flex justify-end gap-4 pt-4 border-t border-white/10">

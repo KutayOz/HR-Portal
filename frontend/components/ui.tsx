@@ -146,25 +146,66 @@ export const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
 
 // --- News Ticker ---
 export const NeonTicker: React.FC<{ items: any[] }> = ({ items }) => {
+    const intelItems = items || [];
+    const hasIntel = intelItems.length > 0;
+    const getPriorityStyles = (priority: string) => {
+        switch (priority) {
+            case 'Critical':
+                return {
+                    text: 'text-neon-red',
+                    badge: 'border-neon-red/40 bg-neon-red/10 text-neon-red',
+                };
+            case 'High':
+                return {
+                    text: 'text-yellow-300',
+                    badge: 'border-yellow-500/40 bg-yellow-500/10 text-yellow-300',
+                };
+            default:
+                return {
+                    text: 'text-gray-300',
+                    badge: 'border-white/15 bg-white/5 text-gray-200',
+                };
+        }
+    };
+
     return (
-        <div className="fixed bottom-0 left-0 right-0 h-8 bg-black border-t border-neon-cyan/30 flex items-center overflow-hidden z-50">
-            <div className="bg-neon-cyan/20 h-full px-4 flex items-center text-xs font-bold text-neon-cyan border-r border-neon-cyan/30 z-10">
-                SYSTEM INTEL
+        <div className="fixed inset-x-0 bottom-0 z-50">
+            <div className="flex h-10 items-center bg-[#04060a]/90 border-t border-white/10 backdrop-blur-md shadow-[0_-8px_30px_rgba(0,0,0,0.4)]">
+                <div className="h-full px-4 flex items-center text-[11px] font-rajdhani uppercase tracking-[0.3em] text-neon-cyan bg-neon-cyan/15 border-r border-neon-cyan/30">
+                    announcments
+                </div>
+                <div className="relative flex-1 overflow-hidden">
+                    <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-[#04060a] via-[#04060a]/80 to-transparent" />
+                    <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-[#04060a] via-[#04060a]/80 to-transparent" />
+                    {hasIntel ? (
+                        <motion.div
+                            className="flex items-center gap-8 whitespace-nowrap w-max px-4"
+                            animate={{ x: ["0%", "-50%"] }}
+                            transition={{ duration: 16, repeat: Infinity, ease: "linear" }}
+                        >
+                            {[...intelItems, ...intelItems].map((item, index) => {
+                                const style = getPriorityStyles(item.priority);
+                                return (
+                                <div
+                                    key={`${item.id}-${index}`}
+                                    className={`flex items-center gap-2 text-[11px] font-mono ${style.text}`}
+                                >
+                                    <span className={`px-2 py-0.5 rounded-full border text-[10px] uppercase tracking-[0.15em] ${style.badge}`}>
+                                        {item.priority}
+                                    </span>
+                                    <span className="font-semibold text-neon-cyan">{item.title}:</span>
+                                    <span className="text-gray-300">{item.content}</span>
+                                </div>
+                                );
+                            })}
+                        </motion.div>
+                    ) : (
+                        <div className="flex h-full items-center px-4 text-[11px] font-mono text-gray-400">
+                            No intel yet - broadcasts will appear here as soon as they are issued.
+                        </div>
+                    )}
+                </div>
             </div>
-            <motion.div 
-                className="flex items-center gap-16 whitespace-nowrap"
-                animate={{ x: ["100%", "-100%"] }}
-                transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-            >
-                {items.map((item) => (
-                    <div key={item.id} className={`flex items-center gap-2 text-xs font-mono ${item.priority === 'Critical' ? 'text-neon-red' : 'text-gray-300'}`}>
-                        {item.priority === 'Critical' && <span className="animate-ping w-2 h-2 bg-neon-red rounded-full" />}
-                        <span className="opacity-50">[{item.priority.toUpperCase()}]</span>
-                        <span className="font-bold">{item.title}:</span>
-                        <span>{item.content}</span>
-                    </div>
-                ))}
-            </motion.div>
         </div>
     );
-}
+};

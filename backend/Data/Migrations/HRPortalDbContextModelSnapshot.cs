@@ -17,10 +17,65 @@ namespace Data.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.0")
+                .HasAnnotation("ProductVersion", "8.0.4")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
+
+            modelBuilder.Entity("Common.Entity.AccessRequest", b =>
+                {
+                    b.Property<int>("AccessRequestId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("AccessRequestId"));
+
+                    b.Property<DateTime?>("AllowedUntil")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DecidedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("OwnerAdminId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime>("RequestedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("RequesterAdminId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<int>("ResourceId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("ResourceType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.HasKey("AccessRequestId");
+
+                    b.HasIndex("OwnerAdminId", "Status");
+
+                    b.HasIndex("RequesterAdminId", "Status");
+
+                    b.HasIndex("ResourceType", "ResourceId");
+
+                    b.ToTable("AccessRequests");
+                });
 
             modelBuilder.Entity("Common.Entity.Announcement", b =>
                 {
@@ -191,6 +246,10 @@ namespace Data.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
+                    b.Property<string>("OwnerAdminId")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
                     b.Property<string>("PhoneNumber")
                         .IsRequired()
                         .HasMaxLength(20)
@@ -303,6 +362,10 @@ namespace Data.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
 
+                    b.Property<string>("OwnerAdminId")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -377,6 +440,10 @@ namespace Data.Migrations
 
                     b.Property<int?>("ManagerId")
                         .HasColumnType("integer");
+
+                    b.Property<string>("OwnerAdminId")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.Property<string>("PhoneNumber")
                         .IsRequired()
@@ -559,6 +626,13 @@ namespace Data.Migrations
                     b.Property<int>("JobId")
                         .HasColumnType("integer");
 
+                    b.Property<decimal?>("OfferedSalary")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("OwnerAdminId")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
                     b.Property<string>("RejectionReason")
                         .IsRequired()
                         .HasMaxLength(1000)
@@ -616,6 +690,10 @@ namespace Data.Migrations
 
                     b.Property<int>("NumberOfDays")
                         .HasColumnType("integer");
+
+                    b.Property<string>("OwnerAdminId")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.Property<string>("Reason")
                         .IsRequired()

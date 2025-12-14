@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Modal } from '../components/Modal';
 import { createDepartment, updateDepartment } from '../services/api';
 import { IDepartment } from '../types';
@@ -32,14 +32,29 @@ export const DepartmentForm: React.FC<DepartmentFormProps> = ({
     description: editDepartment?.description || ''
   });
 
-  const [jobs, setJobs] = useState<JobInput[]>(
-    editDepartment?.jobs?.map(j => ({
-      id: j.id,
-      title: j.title,
-      minSalary: j.minSalary ? j.minSalary.toString() : '',
-      maxSalary: j.maxSalary ? j.maxSalary.toString() : ''
-    })) || []
-  );
+  const [jobs, setJobs] = useState<JobInput[]>([]);
+
+  // Initialize form data when editDepartment changes
+  useEffect(() => {
+    if (editDepartment) {
+      setFormData({
+        departmentName: editDepartment.name || '',
+        description: editDepartment.description || ''
+      });
+      setJobs(
+        editDepartment.jobs?.map(j => ({
+          id: j.id,
+          title: j.title,
+          minSalary: j.minSalary ? j.minSalary.toString() : '',
+          maxSalary: j.maxSalary ? j.maxSalary.toString() : ''
+        })) || []
+      );
+    } else {
+      setFormData({ departmentName: '', description: '' });
+      setJobs([]);
+    }
+    setError('');
+  }, [editDepartment]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,38 +70,6 @@ export const DepartmentForm: React.FC<DepartmentFormProps> = ({
             setLoading(false);
             return;
           }
-
-          const hasMin = job.minSalary.trim() !== '';
-          const hasMax = job.maxSalary.trim() !== '';
-
-          if (hasMin || hasMax) {
-            if (!hasMin || !hasMax) {
-              setError('When specifying a salary range, both minimum and maximum must be provided');
-              setLoading(false);
-              return;
-            }
-
-            const min = parseFloat(job.minSalary);
-            const max = parseFloat(job.maxSalary);
-
-            if (isNaN(min) || min <= 0) {
-              setError('All job positions with a salary must have a valid minimum salary');
-              setLoading(false);
-              return;
-            }
-
-            if (isNaN(max) || max <= 0) {
-              setError('All job positions with a salary must have a valid maximum salary');
-              setLoading(false);
-              return;
-            }
-
-            if (min > max) {
-              setError('Minimum salary cannot be greater than maximum salary');
-              setLoading(false);
-              return;
-            }
-          }
         }
       }
 
@@ -101,10 +84,8 @@ export const DepartmentForm: React.FC<DepartmentFormProps> = ({
             jobTitle: j.title.trim(),
           };
 
-          if (hasMin || hasMax) {
-            payload.minSalary = parseFloat(j.minSalary);
-            payload.maxSalary = parseFloat(j.maxSalary);
-          }
+          if (hasMin) payload.minSalary = parseFloat(j.minSalary);
+          if (hasMax) payload.maxSalary = parseFloat(j.maxSalary);
 
           if (editDepartment && j.id !== undefined) {
             (payload as any).id = j.id;
@@ -209,15 +190,13 @@ export const DepartmentForm: React.FC<DepartmentFormProps> = ({
         <div>
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-rajdhani font-bold text-neon-purple">Job Positions (Optional)</h3>
-            {!editDepartment && (
-              <button
-                type="button"
-                onClick={addJob}
-                className="flex items-center gap-2 px-3 py-1 bg-neon-purple/20 hover:bg-neon-purple/30 border border-neon-purple/50 rounded-lg transition-colors text-sm"
-              >
-                <Plus size={16} /> Add Position
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={addJob}
+              className="flex items-center gap-2 px-3 py-1 bg-neon-purple/20 hover:bg-neon-purple/30 border border-neon-purple/50 rounded-lg transition-colors text-sm"
+            >
+              <Plus size={16} /> Add Position
+            </button>
           </div>
 
             {jobs.length === 0 ? (
@@ -247,8 +226,7 @@ export const DepartmentForm: React.FC<DepartmentFormProps> = ({
                             type="number"
                             value={job.minSalary}
                             onChange={(e) => updateJob(index, 'minSalary', e.target.value)}
-                            min="0"
-                            step="1000"
+                            step="any"
                             className="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-sm text-white focus:border-neon-cyan focus:outline-none"
                             placeholder="50000"
                           />
@@ -259,8 +237,7 @@ export const DepartmentForm: React.FC<DepartmentFormProps> = ({
                             type="number"
                             value={job.maxSalary}
                             onChange={(e) => updateJob(index, 'maxSalary', e.target.value)}
-                            min="0"
-                            step="1000"
+                            step="any"
                             className="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-sm text-white focus:border-neon-cyan focus:outline-none"
                             placeholder="100000"
                           />

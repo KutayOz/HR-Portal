@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Modal } from '../components/Modal';
-import { createAnnouncement } from '../services/api';
+import { createAnnouncement, getDepartments } from '../services/api';
+import { IDepartment } from '../types';
 
 interface AnnouncementFormProps {
   isOpen: boolean;
@@ -11,14 +12,20 @@ interface AnnouncementFormProps {
 export const AnnouncementForm: React.FC<AnnouncementFormProps> = ({ isOpen, onClose, onSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [departments, setDepartments] = useState<IDepartment[]>([]);
   
   const [formData, setFormData] = useState({
     title: '',
     content: '',
     announcementType: 'General',
     priority: 'Normal',
-    expiryDate: ''
+    expiryDate: '',
+    departmentId: ''
   });
+
+  useEffect(() => {
+    getDepartments().then(setDepartments);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,7 +43,8 @@ export const AnnouncementForm: React.FC<AnnouncementFormProps> = ({ isOpen, onCl
         content: '',
         announcementType: 'General',
         priority: 'Normal',
-        expiryDate: ''
+        expiryDate: '',
+        departmentId: ''
       });
     } catch (err: any) {
       setError(err.message || 'Failed to create announcement');
@@ -120,16 +128,33 @@ export const AnnouncementForm: React.FC<AnnouncementFormProps> = ({ isOpen, onCl
           </div>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-300 mb-2">Expiry Date (Optional)</label>
-          <input
-            type="date"
-            name="expiryDate"
-            value={formData.expiryDate}
-            onChange={handleChange}
-            className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-neon-cyan focus:outline-none"
-          />
-          <p className="text-xs text-gray-500 mt-1">Leave empty for permanent announcement</p>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">Department (Optional)</label>
+            <select
+              name="departmentId"
+              value={formData.departmentId}
+              onChange={handleChange}
+              className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-neon-cyan focus:outline-none"
+            >
+              <option value="">All Departments (General)</option>
+              {departments.map((dept) => (
+                <option key={dept.id} value={dept.id}>{dept.name}</option>
+              ))}
+            </select>
+            <p className="text-xs text-gray-500 mt-1">Leave empty for company-wide announcement</p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">Expiry Date (Optional)</label>
+            <input
+              type="date"
+              name="expiryDate"
+              value={formData.expiryDate}
+              onChange={handleChange}
+              className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-neon-cyan focus:outline-none"
+            />
+            <p className="text-xs text-gray-500 mt-1">Leave empty for permanent</p>
+          </div>
         </div>
 
         {/* Actions */}

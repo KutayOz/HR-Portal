@@ -87,8 +87,8 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ isOpen, onClose, onS
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Add New Employee" size="lg">
-      <form onSubmit={handleSubmit} className="space-y-6">
+    <Modal isOpen={isOpen} onClose={onClose} title="Add New Employee" size="md">
+      <form onSubmit={handleSubmit} className="space-y-4">
         {error && (
           <div className="bg-neon-red/10 border border-neon-red/30 text-neon-red px-4 py-3 rounded-lg">
             {error}
@@ -97,72 +97,72 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ isOpen, onClose, onS
 
         {/* Personal Information */}
         <div>
-          <h3 className="text-lg font-rajdhani font-bold text-neon-cyan mb-4">Personal Information</h3>
-          <div className="grid grid-cols-2 gap-4">
+          <h3 className="text-sm font-rajdhani font-bold text-neon-cyan mb-2 uppercase tracking-wider">Personal Information</h3>
+          <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">First Name *</label>
+              <label className="block text-xs text-gray-400 mb-1">First Name *</label>
               <input
                 type="text"
                 name="firstName"
                 value={formData.firstName}
                 onChange={handleChange}
                 required
-                className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-neon-cyan focus:outline-none"
+                className="w-full bg-black/50 border border-white/10 rounded px-3 py-1.5 text-sm text-white focus:border-neon-cyan focus:outline-none"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Last Name *</label>
+              <label className="block text-xs text-gray-400 mb-1">Last Name *</label>
               <input
                 type="text"
                 name="lastName"
                 value={formData.lastName}
                 onChange={handleChange}
                 required
-                className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-neon-cyan focus:outline-none"
+                className="w-full bg-black/50 border border-white/10 rounded px-3 py-1.5 text-sm text-white focus:border-neon-cyan focus:outline-none"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Email *</label>
+              <label className="block text-xs text-gray-400 mb-1">Email *</label>
               <input
                 type="email"
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
                 required
-                className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-neon-cyan focus:outline-none"
+                className="w-full bg-black/50 border border-white/10 rounded px-3 py-1.5 text-sm text-white focus:border-neon-cyan focus:outline-none"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Phone Number *</label>
+              <label className="block text-xs text-gray-400 mb-1">Phone *</label>
               <input
                 type="tel"
                 name="phoneNumber"
                 value={formData.phoneNumber}
                 onChange={handleChange}
                 required
-                className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-neon-cyan focus:outline-none"
+                className="w-full bg-black/50 border border-white/10 rounded px-3 py-1.5 text-sm text-white focus:border-neon-cyan focus:outline-none"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Date of Birth *</label>
+              <label className="block text-xs text-gray-400 mb-1">Birth Date *</label>
               <input
                 type="date"
                 name="dateOfBirth"
                 value={formData.dateOfBirth}
                 onChange={handleChange}
                 required
-                className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-neon-cyan focus:outline-none"
+                className="w-full bg-black/50 border border-white/10 rounded px-3 py-1.5 text-sm text-white focus:border-neon-cyan focus:outline-none"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Hire Date *</label>
+              <label className="block text-xs text-gray-400 mb-1">Hire Date *</label>
               <input
                 type="date"
                 name="hireDate"
                 value={formData.hireDate}
                 onChange={handleChange}
                 required
-                className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-neon-cyan focus:outline-none"
+                className="w-full bg-black/50 border border-white/10 rounded px-3 py-1.5 text-sm text-white focus:border-neon-cyan focus:outline-none"
               />
             </div>
           </div>
@@ -170,16 +170,16 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ isOpen, onClose, onS
 
         {/* Employment Details */}
         <div>
-          <h3 className="text-lg font-rajdhani font-bold text-neon-cyan mb-4">Employment Details</h3>
-          <div className="grid grid-cols-2 gap-4">
+          <h3 className="text-sm font-rajdhani font-bold text-neon-cyan mb-2 uppercase tracking-wider">Employment Details</h3>
+          <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Department *</label>
+              <label className="block text-xs text-gray-400 mb-1">Department *</label>
               <select
                 name="departmentId"
                 value={formData.departmentId}
                 onChange={handleChange}
                 required
-                className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-neon-cyan focus:outline-none"
+                className="w-full bg-black/50 border border-white/10 rounded px-3 py-1.5 text-sm text-white focus:border-neon-cyan focus:outline-none"
               >
                 <option value="">Select Department</option>
                 {departments.map(dept => (
@@ -188,14 +188,14 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ isOpen, onClose, onS
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Job Title *</label>
+              <label className="block text-xs text-gray-400 mb-1">Job Title *</label>
               <select
                 name="jobId"
                 value={formData.jobId}
                 onChange={handleChange}
                 required
                 disabled={!selectedDepartment}
-                className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-neon-cyan focus:outline-none disabled:opacity-50"
+                className="w-full bg-black/50 border border-white/10 rounded px-3 py-1.5 text-sm text-white focus:border-neon-cyan focus:outline-none disabled:opacity-50"
               >
                 <option value="">Select Job Title</option>
                 {selectedDepartment?.jobs.map((job) => (
@@ -204,26 +204,25 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ isOpen, onClose, onS
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Salary *</label>
+              <label className="block text-xs text-gray-400 mb-1">Salary *</label>
               <input
                 type="number"
                 name="currentSalary"
                 value={formData.currentSalary}
                 onChange={handleChange}
                 required
-                min="0"
-                step="0.01"
-                className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-neon-cyan focus:outline-none"
+                step="any"
+                className="w-full bg-black/50 border border-white/10 rounded px-3 py-1.5 text-sm text-white focus:border-neon-cyan focus:outline-none"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Status *</label>
+              <label className="block text-xs text-gray-400 mb-1">Status *</label>
               <select
                 name="employmentStatus"
                 value={formData.employmentStatus}
                 onChange={handleChange}
                 required
-                className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-neon-cyan focus:outline-none"
+                className="w-full bg-black/50 border border-white/10 rounded px-3 py-1.5 text-sm text-white focus:border-neon-cyan focus:outline-none"
               >
                 <option value="Active">Active</option>
                 <option value="OnLeave">On Leave</option>
@@ -235,74 +234,75 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({ isOpen, onClose, onS
 
         {/* Address (Optional) */}
         <div>
-          <h3 className="text-lg font-rajdhani font-bold text-neon-cyan mb-4">Address (Optional)</h3>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="col-span-2">
-              <label className="block text-sm font-medium text-gray-300 mb-2">Street Address</label>
+          <h3 className="text-sm font-rajdhani font-bold text-neon-cyan mb-2 uppercase tracking-wider">Address (Optional)</h3>
+          <div className="grid grid-cols-3 gap-3">
+            <div className="col-span-3">
+              <label className="block text-xs text-gray-400 mb-1">Street Address</label>
               <input
                 type="text"
                 name="address"
                 value={formData.address}
                 onChange={handleChange}
-                className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-neon-cyan focus:outline-none"
+                className="w-full bg-black/50 border border-white/10 rounded px-3 py-1.5 text-sm text-white focus:border-neon-cyan focus:outline-none"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">City</label>
+              <label className="block text-xs text-gray-400 mb-1">City</label>
               <input
                 type="text"
                 name="city"
                 value={formData.city}
                 onChange={handleChange}
-                className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-neon-cyan focus:outline-none"
+                className="w-full bg-black/50 border border-white/10 rounded px-3 py-1.5 text-sm text-white focus:border-neon-cyan focus:outline-none"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">State</label>
+              <label className="block text-xs text-gray-400 mb-1">State</label>
               <input
                 type="text"
                 name="state"
                 value={formData.state}
                 onChange={handleChange}
-                className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-neon-cyan focus:outline-none"
+                className="w-full bg-black/50 border border-white/10 rounded px-3 py-1.5 text-sm text-white focus:border-neon-cyan focus:outline-none"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Postal Code</label>
-              <input
-                type="text"
-                name="postalCode"
-                value={formData.postalCode}
-                onChange={handleChange}
-                className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-neon-cyan focus:outline-none"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Country</label>
-              <input
-                type="text"
-                name="country"
-                value={formData.country}
-                onChange={handleChange}
-                className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-neon-cyan focus:outline-none"
-              />
+              <label className="block text-xs text-gray-400 mb-1">Postal/Country</label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  name="postalCode"
+                  value={formData.postalCode}
+                  onChange={handleChange}
+                  placeholder="Postal"
+                  className="w-1/2 bg-black/50 border border-white/10 rounded px-3 py-1.5 text-sm text-white focus:border-neon-cyan focus:outline-none"
+                />
+                <input
+                  type="text"
+                  name="country"
+                  value={formData.country}
+                  onChange={handleChange}
+                  placeholder="Country"
+                  className="w-1/2 bg-black/50 border border-white/10 rounded px-3 py-1.5 text-sm text-white focus:border-neon-cyan focus:outline-none"
+                />
+              </div>
             </div>
           </div>
         </div>
 
         {/* Actions */}
-        <div className="flex justify-end gap-4 pt-4 border-t border-white/10">
+        <div className="flex justify-end gap-3 pt-3 border-t border-white/10">
           <button
             type="button"
             onClick={onClose}
-            className="px-6 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
+            className="px-4 py-1.5 text-sm bg-white/10 hover:bg-white/20 rounded transition-colors"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={loading}
-            className="px-6 py-2 bg-gradient-to-r from-neon-cyan to-neon-purple hover:shadow-[0_0_20px_rgba(0,243,255,0.5)] rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed font-orbitron"
+            className="px-4 py-1.5 text-sm bg-gradient-to-r from-neon-cyan to-neon-purple hover:shadow-[0_0_20px_rgba(0,243,255,0.5)] rounded transition-all disabled:opacity-50 disabled:cursor-not-allowed font-orbitron"
           >
             {loading ? 'Creating...' : 'Create Employee'}
           </button>

@@ -11,6 +11,7 @@ interface LoginProps {
 export const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<'input' | 'scanning' | 'success'>('input');
+  const [username, setUsername] = useState('admin01');
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,6 +22,10 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
     setTimeout(() => {
       setStep('success');
       setTimeout(() => {
+        try {
+          localStorage.setItem('adminId', username);
+        } catch {
+        }
         onLogin();
       }, 800);
     }, 2000);
@@ -59,21 +64,21 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
             </div>
             
             <h1 className="text-2xl font-orbitron font-bold text-white tracking-widest">SYSTEM ACCESS</h1>
-            <p className="text-xs text-neon-cyan font-mono tracking-[0.3em] mt-1">RESTRICTED AREA</p>
           </div>
 
           {/* Login Form */}
           <form onSubmit={handleLogin} className="space-y-6">
             <div className="space-y-4">
               <div className="group">
-                <label className="block text-[10px] font-mono text-gray-400 uppercase mb-1 tracking-wider">Agent Identity</label>
+                <label className="block text-[10px] font-mono text-gray-400 uppercase mb-1 tracking-wider">Username</label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <User size={16} className="text-neon-cyan/60 group-focus-within:text-neon-cyan transition-colors" />
                   </div>
                   <input 
                     type="text" 
-                    defaultValue="admin_sys_01"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
                     disabled={loading}
                     className="block w-full pl-10 pr-3 py-2.5 bg-black/40 border border-white/10 rounded text-sm text-white font-mono focus:ring-1 focus:ring-neon-cyan focus:border-neon-cyan placeholder-gray-600 transition-all"
                     placeholder="ENTER ID..."
@@ -82,7 +87,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
               </div>
 
               <div className="group">
-                <label className="block text-[10px] font-mono text-gray-400 uppercase mb-1 tracking-wider">Passcode</label>
+                <label className="block text-[10px] font-mono text-gray-400 uppercase mb-1 tracking-wider">Password</label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <Lock size={16} className="text-neon-cyan/60 group-focus-within:text-neon-cyan transition-colors" />
@@ -104,7 +109,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
                     whileTap={{ scale: 0.98 }}
                     className="w-full py-3 bg-neon-cyan/10 hover:bg-neon-cyan/20 border border-neon-cyan/50 text-neon-cyan font-rajdhani font-bold text-lg tracking-widest rounded uppercase transition-all shadow-[0_0_15px_rgba(0,243,255,0.1)] hover:shadow-[0_0_25px_rgba(0,243,255,0.3)]"
                 >
-                    Initialize Link
+                    Connect
                 </motion.button>
             )}
 
@@ -124,7 +129,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
           <div className="mt-8 flex justify-between items-center text-[10px] text-gray-600 font-mono">
              <span>V.2.0.49</span>
-             <span>SECURE CONNECTION</span>
+             <span>Made by Ahmet Kutay Özdemir</span>
           </div>
         </GlassCard>
       </motion.div>
