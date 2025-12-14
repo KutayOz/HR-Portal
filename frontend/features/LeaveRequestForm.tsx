@@ -24,7 +24,12 @@ export const LeaveRequestForm: React.FC<LeaveRequestFormProps> = ({ isOpen, onCl
 
   useEffect(() => {
     if (isOpen) {
-      getEmployees().then(setEmployees);
+      getEmployees()
+        .then(setEmployees)
+        .catch((error) => {
+          console.error('Failed to load employees:', error);
+          setEmployees([]);
+        });
     }
   }, [isOpen]);
 

@@ -9,6 +9,8 @@ import {
   Settings,
   LogOut,
   User,
+  Sun,
+  Moon,
 } from 'lucide-react';
 import { ViewState, IAnnouncement } from './types';
 import { Dashboard } from './features/Dashboard';
@@ -33,6 +35,24 @@ const App: React.FC = () => {
   const [showAnnouncementForm, setShowAnnouncementForm] = useState(false);
   const [showAccessRequests, setShowAccessRequests] = useState(false);
   const [pendingAccessCount, setPendingAccessCount] = useState(0);
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('theme');
+      if (saved) return saved === 'dark';
+      return true; // default dark
+    }
+    return true;
+  });
+
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    }
+  }, [isDarkMode]);
 
   // Clock Effect & Data
   const loadAnnouncements = () => {
@@ -107,7 +127,7 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#050505] text-white font-inter relative overflow-hidden">
+    <div className="min-h-screen bg-gray-100 dark:bg-[#050505] text-gray-900 dark:text-white font-inter relative overflow-hidden transition-colors duration-300">
 
       {/* Ambient Background Glows - Persistent */}
       <div className="fixed top-0 left-0 w-[500px] h-[500px] bg-neon-purple/20 rounded-full blur-[120px] pointer-events-none -translate-x-1/2 -translate-y-1/2 z-0" />
@@ -130,7 +150,7 @@ const App: React.FC = () => {
             className="relative z-10"
           >
             {/* Top Header / HUD Bar */}
-            <header className="fixed top-0 w-full z-50 border-b border-white/10 bg-[#050505]/80 backdrop-blur-md">
+            <header className="fixed top-0 w-full z-50 border-b border-gray-200 dark:border-white/10 bg-white/80 dark:bg-[#050505]/80 backdrop-blur-md transition-colors duration-300">
               <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
                 <div
                   className="flex items-center gap-3 cursor-pointer group"
@@ -152,6 +172,19 @@ const App: React.FC = () => {
                     <span>{formatTime(time)}</span>
                   </div>
 
+                  {/* Theme Toggle */}
+                  <button
+                    onClick={() => setIsDarkMode(!isDarkMode)}
+                    className="p-2 hover:bg-white/5 dark:hover:bg-white/5 rounded-full transition-all duration-300 group"
+                    title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+                  >
+                    {isDarkMode ? (
+                      <Sun className="w-5 h-5 text-yellow-400 group-hover:rotate-180 transition-transform duration-500" />
+                    ) : (
+                      <Moon className="w-5 h-5 text-neon-purple group-hover:rotate-12 transition-transform duration-300" />
+                    )}
+                  </button>
+
                   <button
                     className="relative p-2 hover:bg-white/5 rounded-full transition-colors"
                     onClick={() => setShowAccessRequests(true)}
@@ -169,7 +202,7 @@ const App: React.FC = () => {
                       className="flex items-center gap-3 pl-6 border-l border-white/10 hover:bg-white/5 p-2 rounded-lg transition-colors"
                     >
                       <div className="text-right hidden sm:block">
-                        <div className="text-sm font-bold text-white">Admin User</div>
+                        <div className="text-sm font-bold text-gray-900 dark:text-white">Admin User</div>
                         <div className="text-xs text-neon-purple">Level 9 Access</div>
                       </div>
                       <div className="w-10 h-10 rounded-full border-2 border-neon-purple p-0.5">
@@ -184,16 +217,16 @@ const App: React.FC = () => {
                           initial={{ opacity: 0, y: 10, scale: 0.95 }}
                           animate={{ opacity: 1, y: 0, scale: 1 }}
                           exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                          className="absolute right-0 top-full mt-2 w-56 bg-[#0a0a10]/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-[0_0_30px_rgba(0,0,0,0.5)] z-50 overflow-hidden"
+                          className="absolute right-0 top-full mt-2 w-56 bg-white/95 dark:bg-[#0a0a10]/95 backdrop-blur-xl border border-gray-200 dark:border-white/10 rounded-xl shadow-lg dark:shadow-[0_0_30px_rgba(0,0,0,0.5)] z-50 overflow-hidden"
                         >
                           <div className="p-2 space-y-1">
-                            <button className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-300 hover:text-white hover:bg-white/10 rounded-lg transition-colors">
+                            <button className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10 rounded-lg transition-colors">
                               <User size={16} className="text-neon-cyan" /> Profile
                             </button>
-                            <button className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-300 hover:text-white hover:bg-white/10 rounded-lg transition-colors">
+                            <button className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10 rounded-lg transition-colors">
                               <Settings size={16} className="text-neon-purple" /> System Settings
                             </button>
-                            <div className="h-px bg-white/10 my-1" />
+                            <div className="h-px bg-gray-200 dark:bg-white/10 my-1" />
                             <button
                               onClick={handleLogout}
                               className="w-full flex items-center gap-3 px-3 py-2 text-sm text-neon-red hover:bg-neon-red/10 rounded-lg transition-colors"

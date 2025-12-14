@@ -56,6 +56,7 @@ export const Employees: React.FC<EmployeesProps> = ({ onBack }) => {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [activeTab, setActiveTab] = useState('Overview');
   const [scope, setScope] = useState<'all' | 'yours'>('yours');
@@ -63,6 +64,13 @@ export const Employees: React.FC<EmployeesProps> = ({ onBack }) => {
 
   const loadRequestIdRef = useRef(0);
   const loadTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const getErrorMessage = (error: unknown): string => {
+    if (error && typeof error === 'object' && 'message' in error) {
+      return String((error as any).message);
+    }
+    return 'Unexpected error';
+  };
 
   const getAdminId = (): string | null => {
     try {
@@ -123,6 +131,7 @@ export const Employees: React.FC<EmployeesProps> = ({ onBack }) => {
 
   const loadEmployees = () => {
     const requestId = ++loadRequestIdRef.current;
+    setLoadError(null);
     setLoading(true);
 
     if (loadTimeoutRef.current) {
@@ -142,10 +151,12 @@ export const Employees: React.FC<EmployeesProps> = ({ onBack }) => {
         if (loadRequestIdRef.current !== requestId) return;
         setEmployees(data);
         setFilteredEmployees(data);
+        setLoadError(null);
       })
       .catch((error) => {
         if (loadRequestIdRef.current !== requestId) return;
         console.error('Failed to load employees:', error);
+        setLoadError(getErrorMessage(error));
       })
       .finally(() => {
         if (loadRequestIdRef.current !== requestId) return;
@@ -192,7 +203,7 @@ export const Employees: React.FC<EmployeesProps> = ({ onBack }) => {
       loadEmployees();
     } catch (error) {
       console.error('Failed to delete employee:', error);
-      alert('Failed to delete employee. Please try again.');
+      alert(getErrorMessage(error));
     }
   };
 
@@ -215,12 +226,38 @@ export const Employees: React.FC<EmployeesProps> = ({ onBack }) => {
       return;
     }
     try {
-      await Promise.all(Array.from(selectedIds).map(id => deleteEmployee(id)));
-      setSelectedIds(new Set());
+      const ids = Array.from(selectedIds);
+      const results = await Promise.allSettled(ids.map(id => deleteEmployee(id)));
+
+      const succeededIds: string[] = [];
+      const failed: Array<{ id: string; message: string }> = [];
+
+      results.forEach((result, index) => {
+        const id = ids[index];
+        if (result.status === 'fulfilled') {
+          succeededIds.push(id);
+        } else {
+          failed.push({ id, message: getErrorMessage(result.reason) });
+        }
+      });
+
+      setSelectedIds(prev => {
+        const next = new Set(prev);
+        succeededIds.forEach(id => next.delete(id));
+        return next;
+      });
+
+      if (failed.length === 0) {
+        alert(`Deleted ${succeededIds.length} employee(s).`);
+      } else {
+        console.error('Bulk delete failures:', failed);
+        alert(`Deleted ${succeededIds.length} employee(s). Failed ${failed.length}.`);
+      }
       loadEmployees();
     } catch (error) {
       console.error('Failed to delete employees:', error);
-      alert('Failed to delete some employees. Please try again.');
+      alert(getErrorMessage(error));
+      loadEmployees();
     }
   };
 
@@ -292,18 +329,18 @@ export const Employees: React.FC<EmployeesProps> = ({ onBack }) => {
           )}
         </div>
 
-        <div className="inline-flex rounded-lg border border-white/10 overflow-hidden text-xs">
+        <div className="inline-flex rounded-lg border border-gray-300 dark:border-white/10 overflow-hidden text-xs">
           <button
             type="button"
             onClick={() => setScope('yours')}
-            className={`px-3 py-1 transition-colors ${scope === 'yours' ? 'bg-neon-cyan/20 text-neon-cyan' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+            className={`px-3 py-1 transition-colors ${scope === 'yours' ? 'bg-neon-cyan/20 text-neon-cyan' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5'}`}
           >
             Yours
           </button>
           <button
             type="button"
             onClick={() => setScope('all')}
-            className={`px-3 py-1 transition-colors border-l border-white/10 ${scope === 'all' ? 'bg-neon-purple/20 text-neon-purple' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+            className={`px-3 py-1 transition-colors border-l border-gray-300 dark:border-white/10 ${scope === 'all' ? 'bg-neon-purple/20 text-neon-purple' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5'}`}
           >
             All
           </button>
@@ -318,7 +355,7 @@ export const Employees: React.FC<EmployeesProps> = ({ onBack }) => {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="block w-full p-2 pl-8 text-sm font-mono bg-black/50 border border-neon-green/30 rounded-sm text-white focus:ring-1 focus:ring-neon-green focus:border-neon-green placeholder-gray-600"
+            className="block w-full p-2 pl-8 text-sm font-mono bg-gray-100 dark:bg-black/50 border border-neon-green/30 rounded-sm text-gray-900 dark:text-white focus:ring-1 focus:ring-neon-green focus:border-neon-green placeholder-gray-400 dark:placeholder-gray-600"
             placeholder="SEARCH_QUERY_"
           />
           <Search className="absolute right-3 top-2.5 text-neon-green opacity-50" size={14} />
@@ -326,6 +363,15 @@ export const Employees: React.FC<EmployeesProps> = ({ onBack }) => {
       </div>
 
       <SectionHeader title="Personnel Directory"/>
+
+      {loadError && (
+        <div className="mb-6 bg-neon-red/10 border border-neon-red/30 text-neon-red px-4 py-3 rounded-lg flex items-center justify-between gap-4">
+          <span className="text-sm font-mono break-words">{loadError}</span>
+          <NeonButton onClick={loadEmployees} variant="ghost">
+            Retry
+          </NeonButton>
+        </div>
+      )}
 
       {/* Grid of Employees */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -365,7 +411,7 @@ export const Employees: React.FC<EmployeesProps> = ({ onBack }) => {
                 <img src={emp.avatarUrl} alt={emp.firstName} className="relative w-24 h-24 rounded-full object-cover border-2 border-white/10 z-10" />
               </div>
 
-              <h3 className="text-lg font-orbitron font-bold text-white">{emp.firstName} {emp.lastName}</h3>
+              <h3 className="text-lg font-orbitron font-bold text-gray-900 dark:text-white">{emp.firstName} {emp.lastName}</h3>
               <p className="text-neon-purple font-rajdhani font-semibold mb-2">{emp.jobTitle}</p>
 
               <div className="flex gap-2">
@@ -405,14 +451,14 @@ export const Employees: React.FC<EmployeesProps> = ({ onBack }) => {
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.9, y: 20 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-5xl bg-[#0a0a10] border border-neon-cyan/30 rounded-2xl overflow-hidden shadow-[0_0_50px_rgba(0,243,255,0.15)] relative flex flex-col md:flex-row h-[600px] max-h-[92vh] overflow-y-auto md:overflow-hidden"
+              className="w-full max-w-5xl bg-white dark:bg-[#0a0a10] border border-gray-200 dark:border-neon-cyan/30 rounded-2xl overflow-hidden shadow-xl dark:shadow-[0_0_50px_rgba(0,243,255,0.15)] relative flex flex-col md:flex-row h-[600px] max-h-[92vh] overflow-y-auto md:overflow-hidden"
             >
               {/* Left: Visuals & Basic Info */}
               <div className="md:w-1/3 p-8 bg-gradient-to-b from-neon-cyan/5 to-transparent border-r border-white/10 flex flex-col items-center text-center">
                 <div className="w-40 h-40 rounded-full border-4 border-neon-cyan/30 p-1 mb-6 shadow-[0_0_20px_rgba(0,243,255,0.3)]">
                   <img src={selectedEmployee.avatarUrl} className="w-full h-full rounded-full object-cover grayscale hover:grayscale-0 transition-all duration-500" />
                 </div>
-                <h2 className="text-2xl font-orbitron font-bold text-white">{selectedEmployee.firstName} {selectedEmployee.lastName}</h2>
+                <h2 className="text-2xl font-orbitron font-bold text-gray-900 dark:text-white">{selectedEmployee.firstName} {selectedEmployee.lastName}</h2>
                 <p className="text-neon-cyan font-mono text-sm mb-4">{selectedEmployee.id}</p>
 
                 <StatusBadge status={selectedEmployee.status} />
@@ -420,18 +466,18 @@ export const Employees: React.FC<EmployeesProps> = ({ onBack }) => {
                 <div className="mt-6 w-full space-y-3 text-left">
                   <div className="flex items-center justify-between text-sm text-gray-400 border-b border-white/10 pb-2">
                     <span className="flex items-center gap-2"><Mail size={14} /> Email</span>
-                    <span className="text-white text-xs">{selectedEmployee.email}</span>
+                    <span className="text-gray-900 dark:text-white text-xs">{selectedEmployee.email}</span>
                   </div>
                   <div className="flex items-center justify-between text-sm text-gray-400 border-b border-white/10 pb-2">
                     <span className="flex items-center gap-2"><Hash size={14} /> Phone</span>
-                    <span className="text-white text-xs">{selectedEmployee.phoneNumber}</span>
+                    <span className="text-gray-900 dark:text-white text-xs">{selectedEmployee.phoneNumber}</span>
                   </div>
                 </div>
               </div>
 
               {/* Right: Detailed Specs with Tabs */}
-              <div className="md:w-2/3 flex flex-col h-full bg-[#050505]">
-                <div className="flex items-center justify-between p-4 border-b border-white/10">
+              <div className="md:w-2/3 flex flex-col h-full bg-gray-50 dark:bg-[#050505]">
+                <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-white/10">
                   <div className="flex gap-4">
                     {['Overview', 'Contracts', 'Compensation', 'Attendance'].map((tab) => (
                       <button
@@ -462,24 +508,24 @@ export const Employees: React.FC<EmployeesProps> = ({ onBack }) => {
                       exit={{ opacity: 0, x: -20 }}
                     >
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                        <div className="bg-white/5 p-4 rounded border border-white/10">
+                        <div className="bg-gray-100 dark:bg-white/5 p-4 rounded border border-gray-200 dark:border-white/10">
                           <DecryptedText label="Current Salary" value={selectedEmployee.currentSalary} />
                         </div>
-                        <div className="bg-white/5 p-4 rounded border border-white/10">
+                        <div className="bg-gray-100 dark:bg-white/5 p-4 rounded border border-gray-200 dark:border-white/10">
                           <div className="text-[10px] font-mono text-gray-500 uppercase mb-1">Department</div>
-                          <div className="text-white font-orbitron">{selectedEmployee.departmentId}</div>
+                          <div className="text-gray-900 dark:text-white font-orbitron">{selectedEmployee.departmentId}</div>
                         </div>
-                        <div className="bg-white/5 p-4 rounded border border-white/10">
+                        <div className="bg-gray-100 dark:bg-white/5 p-4 rounded border border-gray-200 dark:border-white/10">
                           <div className="flex items-center gap-2 text-[10px] font-mono text-gray-500 uppercase mb-1">
                             <User size={10} /> Reporting To
                           </div>
                           <div className="text-neon-cyan font-bold">{selectedEmployee.managerId || "N/A"}</div>
                         </div>
-                        <div className="bg-white/5 p-4 rounded border border-white/10">
+                        <div className="bg-gray-100 dark:bg-white/5 p-4 rounded border border-gray-200 dark:border-white/10">
                           <div className="flex items-center gap-2 text-[10px] font-mono text-gray-500 uppercase mb-1">
                             <CalendarDays size={10} /> Hire Date
                           </div>
-                          <div className="text-white">{selectedEmployee.hireDate}</div>
+                          <div className="text-gray-900 dark:text-white">{selectedEmployee.hireDate}</div>
                         </div>
                       </div>
 

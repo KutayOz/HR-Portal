@@ -42,7 +42,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
         <GlassCard className="p-8 border-t-4 border-t-neon-cyan">
           {/* Header */}
           <div className="text-center mb-8 relative">
-            <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-black/50 border border-neon-cyan/30 flex items-center justify-center relative overflow-hidden">
+            <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gray-100 dark:bg-black/50 border border-neon-cyan/30 flex items-center justify-center relative overflow-hidden">
                <AnimatePresence mode="wait">
                  {step === 'input' && <ShieldCheck className="text-neon-cyan w-10 h-10" />}
                  {step === 'scanning' && (
@@ -63,7 +63,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
                </AnimatePresence>
             </div>
             
-            <h1 className="text-2xl font-orbitron font-bold text-white tracking-widest">SYSTEM ACCESS</h1>
+            <h1 className="text-2xl font-orbitron font-bold text-gray-900 dark:text-white tracking-widest">SYSTEM ACCESS</h1>
           </div>
 
           {/* Login Form */}
@@ -80,7 +80,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     disabled={loading}
-                    className="block w-full pl-10 pr-3 py-2.5 bg-black/40 border border-white/10 rounded text-sm text-white font-mono focus:ring-1 focus:ring-neon-cyan focus:border-neon-cyan placeholder-gray-600 transition-all"
+                    className="block w-full pl-10 pr-3 py-2.5 bg-gray-100 dark:bg-black/40 border border-gray-300 dark:border-white/10 rounded text-sm text-gray-900 dark:text-white font-mono focus:ring-1 focus:ring-neon-cyan focus:border-neon-cyan placeholder-gray-400 dark:placeholder-gray-600 transition-all"
                     placeholder="ENTER ID..."
                   />
                 </div>
@@ -96,7 +96,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
                     type="password" 
                     defaultValue="password"
                     disabled={loading}
-                    className="block w-full pl-10 pr-3 py-2.5 bg-black/40 border border-white/10 rounded text-sm text-white font-mono focus:ring-1 focus:ring-neon-cyan focus:border-neon-cyan placeholder-gray-600 transition-all"
+                    className="block w-full pl-10 pr-3 py-2.5 bg-gray-100 dark:bg-black/40 border border-gray-300 dark:border-white/10 rounded text-sm text-gray-900 dark:text-white font-mono focus:ring-1 focus:ring-neon-cyan focus:border-neon-cyan placeholder-gray-400 dark:placeholder-gray-600 transition-all"
                     placeholder="••••••••"
                   />
                 </div>
@@ -114,7 +114,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
             )}
 
             {step !== 'input' && (
-                <div className="w-full py-3 bg-black/40 border border-white/10 rounded flex items-center justify-center gap-2 text-xs font-mono text-gray-400">
+                <div className="w-full py-3 bg-gray-100 dark:bg-black/40 border border-gray-300 dark:border-white/10 rounded flex items-center justify-center gap-2 text-xs font-mono text-gray-500 dark:text-gray-400">
                     {step === 'scanning' ? (
                         <>
                             <ScanLine className="animate-spin" size={14} />

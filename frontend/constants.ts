@@ -4,7 +4,7 @@ import { Scan, Users, Briefcase, CalendarClock, Building2 } from 'lucide-react';
 // API Configuration
 // Default backend URL aligned with ASP.NET Core default (http://localhost:5000)
 // Can be overridden via VITE_API_URL in .env for custom ports/environments
-export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+export const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
 export const NAV_ITEMS = [
   { id: 'dashboard', label: 'Command Center', icon: Scan },

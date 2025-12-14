@@ -19,8 +19,10 @@ export const GlassCard: React.FC<GlassCardProps> = ({ children, className = '', 
       onClick={onClick}
       className={`
         relative overflow-hidden rounded-xl 
-        bg-neon-glass backdrop-blur-xl 
-        border border-white/10 
+        bg-white/80 dark:bg-neon-glass backdrop-blur-xl 
+        border border-gray-200 dark:border-white/10 
+        shadow-sm dark:shadow-none
+        transition-colors duration-300
         ${hoverEffect ? 'cursor-pointer hover:border-neon-cyan/50' : ''}
         ${className}
       `}
@@ -71,7 +73,7 @@ export const SectionHeader: React.FC<{ title: string; subtitle?: string }> = ({ 
     <motion.h2 
       initial={{ opacity: 0, x: -20 }}
       animate={{ opacity: 1, x: 0 }}
-      className="text-4xl font-orbitron font-bold text-white tracking-widest uppercase"
+      className="text-4xl font-orbitron font-bold text-gray-900 dark:text-white tracking-widest uppercase"
     >
       {title} <span className="text-neon-cyan">.</span>
     </motion.h2>
@@ -170,13 +172,13 @@ export const NeonTicker: React.FC<{ items: any[] }> = ({ items }) => {
 
     return (
         <div className="fixed inset-x-0 bottom-0 z-50">
-            <div className="flex h-10 items-center bg-[#04060a]/90 border-t border-white/10 backdrop-blur-md shadow-[0_-8px_30px_rgba(0,0,0,0.4)]">
+            <div className="flex h-10 items-center bg-white/90 dark:bg-[#04060a]/90 border-t border-gray-200 dark:border-white/10 backdrop-blur-md shadow-lg dark:shadow-[0_-8px_30px_rgba(0,0,0,0.4)] transition-colors duration-300">
                 <div className="h-full px-4 flex items-center text-[11px] font-rajdhani uppercase tracking-[0.3em] text-neon-cyan bg-neon-cyan/15 border-r border-neon-cyan/30">
                     announcments
                 </div>
                 <div className="relative flex-1 overflow-hidden">
-                    <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-[#04060a] via-[#04060a]/80 to-transparent" />
-                    <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-[#04060a] via-[#04060a]/80 to-transparent" />
+                    <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-white dark:from-[#04060a] via-white/80 dark:via-[#04060a]/80 to-transparent" />
+                    <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white dark:from-[#04060a] via-white/80 dark:via-[#04060a]/80 to-transparent" />
                     {hasIntel ? (
                         <motion.div
                             className="flex items-center gap-8 whitespace-nowrap w-max px-4"

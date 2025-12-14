@@ -87,15 +87,23 @@ public class KafkaConsumerService : BackgroundService
 
         try
         {
-            var baseEvent = JsonSerializer.Deserialize<HREvent>(result.Message.Value, _jsonOptions);
-
-            if (baseEvent == null)
+            // First, extract EventType from JSON without deserializing the full object
+            // This is needed because HREvent is abstract and cannot be directly deserialized
+            using var doc = JsonDocument.Parse(result.Message.Value);
+            if (!doc.RootElement.TryGetProperty("eventType", out var eventTypeProp))
             {
-                _logger.LogWarning("Failed to deserialize message from topic {Topic}", result.Topic);
+                _logger.LogWarning("Message missing eventType property from topic {Topic}", result.Topic);
                 return Task.CompletedTask;
             }
 
-            switch (baseEvent.EventType)
+            var eventType = eventTypeProp.GetString();
+            if (string.IsNullOrEmpty(eventType))
+            {
+                _logger.LogWarning("Empty eventType in message from topic {Topic}", result.Topic);
+                return Task.CompletedTask;
+            }
+
+            switch (eventType)
             {
                 case nameof(EmployeeCreatedEvent):
                     var empCreated = JsonSerializer.Deserialize<EmployeeCreatedEvent>(result.Message.Value, _jsonOptions);
@@ -119,7 +127,7 @@ public class KafkaConsumerService : BackgroundService
                     break;
 
                 default:
-                    _logger.LogDebug("Unhandled event type: {EventType}", baseEvent.EventType);
+                    _logger.LogDebug("Unhandled event type: {EventType}", eventType);
                     break;
             }
         }

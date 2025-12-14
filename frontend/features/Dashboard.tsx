@@ -47,10 +47,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate, announcements 
         getDepartments().then(setDepartments);
         getLeaves().then(setLeaves);
         // Fetch ALL employees for accurate dashboard statistics
-        getEmployees('all').then(data => {
-            console.log('Dashboard - Loaded employees:', data.length, data[0]);
-            setEmployees(data);
-        });
+        getEmployees('all')
+            .then(data => {
+                console.log('Dashboard - Loaded employees:', data.length, data[0]);
+                setEmployees(data);
+            })
+            .catch(error => {
+                console.error('Dashboard - Failed to load employees:', error);
+                setEmployees([]);
+            });
     }, []);
 
     // Helper to extract numeric ID from department ID string
@@ -125,11 +130,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate, announcements 
 
                     {/* Summary Stats */}
                     <div className="grid grid-cols-2 gap-3 mb-4">
-                        <div className="bg-black/30 rounded-lg p-3 border border-white/5">
+                        <div className="bg-gray-100 dark:bg-black/30 rounded-lg p-3 border border-gray-200 dark:border-white/5">
                             <div className="text-[10px] text-gray-500 font-rajdhani uppercase mb-1">Total Departments</div>
-                            <div className="text-2xl font-orbitron font-bold text-white">{departments.length}</div>
+                            <div className="text-2xl font-orbitron font-bold text-gray-900 dark:text-white">{departments.length}</div>
                         </div>
-                        <div className="bg-black/30 rounded-lg p-3 border border-white/5">
+                        <div className="bg-gray-100 dark:bg-black/30 rounded-lg p-3 border border-gray-200 dark:border-white/5">
                             <div className="text-[10px] text-gray-500 font-rajdhani uppercase mb-1">Total Positions</div>
                             <div className="text-2xl font-orbitron font-bold text-neon-cyan">
                                 {departments.reduce((sum, d) => sum + d.jobs.length, 0)}
@@ -152,7 +157,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate, announcements 
                                     className="p-3 rounded border bg-white/5 border-transparent hover:bg-white/10 hover:border-neon-cyan/30 transition-all duration-300"
                                 >
                                     <div className="flex items-center justify-between mb-2">
-                                        <span className="font-orbitron text-sm text-white">{dept.name}</span>
+                                        <span className="font-orbitron text-sm text-gray-900 dark:text-white">{dept.name}</span>
                                         <span className="text-xs text-gray-500 font-mono">{dept.jobs.length} positions</span>
                                     </div>
                                     {dept.description && (
@@ -177,15 +182,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate, announcements 
 
                     {/* Summary Stats Row */}
                     <div className="grid grid-cols-3 gap-3 mb-4">
-                        <div className="bg-black/30 rounded p-2 text-center border border-white/5">
+                        <div className="bg-gray-100 dark:bg-black/30 rounded p-2 text-center border border-gray-200 dark:border-white/5">
                             <div className="text-lg font-orbitron font-bold text-neon-cyan">{activeCount}</div>
                             <div className="text-[10px] text-gray-500">Active</div>
                         </div>
-                        <div className="bg-black/30 rounded p-2 text-center border border-white/5">
+                        <div className="bg-gray-100 dark:bg-black/30 rounded p-2 text-center border border-gray-200 dark:border-white/5">
                             <div className="text-lg font-orbitron font-bold text-yellow-500">{formatCurrency(totalSalary)}</div>
                             <div className="text-[10px] text-gray-500">Payroll</div>
                         </div>
-                        <div className="bg-black/30 rounded p-2 text-center border border-white/5">
+                        <div className="bg-gray-100 dark:bg-black/30 rounded p-2 text-center border border-gray-200 dark:border-white/5">
                             <div className="text-lg font-orbitron font-bold text-neon-green">{departments.length}</div>
                             <div className="text-[10px] text-gray-500">Depts</div>
                         </div>
@@ -212,7 +217,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate, announcements 
                         </div>
                     </div>
 
-                    <div className="flex-1 relative">
+                    <div style={{ height: 150 }}>
                         {salaryByDept.length > 0 ? (
                             <ResponsiveContainer width="100%" height="100%">
                                 <BarChart data={salaryByDept} layout="vertical">
@@ -257,7 +262,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate, announcements 
                     <div className="w-16 h-16 rounded-2xl bg-neon-cyan/5 border border-neon-cyan/20 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-[0_0_15px_rgba(0,243,255,0.1)] group-hover:shadow-[0_0_25px_rgba(0,243,255,0.3)]">
                         <Users size={32} className="text-neon-cyan" />
                     </div>
-                    <h3 className="text-xl font-orbitron font-bold text-white">Personnel</h3>
+                    <h3 className="text-xl font-orbitron font-bold text-gray-900 dark:text-white">Personnel</h3>
                 </GlassCard>
 
                 <GlassCard
@@ -268,7 +273,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate, announcements 
                     <div className="w-16 h-16 rounded-2xl bg-neon-purple/5 border border-neon-purple/20 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-[0_0_15px_rgba(189,0,255,0.1)] group-hover:shadow-[0_0_25px_rgba(189,0,255,0.3)]">
                         <Briefcase size={32} className="text-neon-purple" />
                     </div>
-                    <h3 className="text-xl font-orbitron font-bold text-white">Recruitment</h3>
+                    <h3 className="text-xl font-orbitron font-bold text-gray-900 dark:text-white">Recruitment</h3>
                 </GlassCard>
 
                 <GlassCard
@@ -279,7 +284,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate, announcements 
                     <div className="w-16 h-16 rounded-2xl bg-neon-green/5 border border-neon-green/20 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-[0_0_15px_rgba(10,255,100,0.1)] group-hover:shadow-[0_0_25px_rgba(10,255,100,0.3)]">
                         <CalendarClock size={32} className="text-neon-green" />
                     </div>
-                    <h3 className="text-xl font-orbitron font-bold text-white">Requests</h3>
+                    <h3 className="text-xl font-orbitron font-bold text-gray-900 dark:text-white">Requests</h3>
                 </GlassCard>
 
             </div>
@@ -314,12 +319,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate, announcements 
                                 key={announcement.id}
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                className="p-4 rounded-lg bg-black/30 border border-white/5 hover:border-white/10 transition-all group"
+                                className="p-4 rounded-lg bg-gray-50 dark:bg-black/30 border border-gray-200 dark:border-white/5 hover:border-gray-300 dark:hover:border-white/10 transition-all group"
                             >
                                 <div className="flex items-start justify-between gap-4">
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-3 mb-2">
-                                            <h4 className="font-orbitron text-sm text-white truncate">{announcement.title}</h4>
+                                            <h4 className="font-orbitron text-sm text-gray-900 dark:text-white truncate">{announcement.title}</h4>
                                             <span className={`px-2 py-0.5 rounded text-[10px] font-orbitron uppercase tracking-wider border ${getPriorityColor(announcement.priority)}`}>
                                                 {announcement.priority}
                                             </span>

@@ -243,8 +243,9 @@ export const OfferedCard: React.FC<OfferedCardProps> = ({ app, onDelete, onViewD
               <label className="text-[9px] text-gray-500">MAAŞ</label>
               <input
                 type="number"
-                value={contractData.salary}
+                value={contractData.salary || ''}
                 onChange={(e) => setContractData({ ...contractData, salary: parseFloat(e.target.value) || 0 })}
+                placeholder="0"
                 className="w-full bg-black/50 border border-white/10 rounded px-2 py-1 text-xs text-white focus:border-neon-purple focus:outline-none"
               />
             </div>

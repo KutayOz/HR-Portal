@@ -1,14 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { ArrowLeft, BarChart2, TrendingUp, Users, DollarSign, Building2, Wallet } from 'lucide-react';
+import { ArrowLeft, TrendingUp, Users, DollarSign, Building2, Wallet } from 'lucide-react';
 import { NeonButton, SectionHeader, GlassCard } from '../components/ui';
 import { getEmployees, getDepartments } from '../services/api';
 import { IEmployee, IDepartment } from '../types';
-import {
-    BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-    AreaChart, Area, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar,
-    PieChart, Pie, Cell
-} from 'recharts';
 
 interface StatisticsProps {
     onBack: () => void;
@@ -199,55 +193,64 @@ export const Statistics: React.FC<StatisticsProps> = ({ onBack }) => {
 
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
 
-                        {/* Department Distribution */}
-                        <GlassCard className="p-6 h-[400px] flex flex-col">
+                        {/* Department Distribution - Simple CSS Chart */}
+                        <GlassCard className="p-6">
                             <h3 className="text-lg font-rajdhani font-bold text-neon-cyan mb-4 flex items-center gap-2">
                                 <Users size={18} /> Department Distribution
                             </h3>
-                            <div className="flex-1">
+                            <div className="space-y-3">
                                 {deptStats.length > 0 ? (
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <BarChart data={deptStats}>
-                                            <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-                                            <XAxis dataKey="name" stroke="#888" fontSize={10} />
-                                            <YAxis stroke="#888" />
-                                            <Tooltip
-                                                contentStyle={{ backgroundColor: '#0a0a10', borderColor: '#00f3ff' }}
-                                                itemStyle={{ color: '#fff' }}
-                                                formatter={(value: any) => [value, 'Employees']}
-                                            />
-                                            <Bar dataKey="count" fill="#00f3ff" radius={[4, 4, 0, 0]} />
-                                        </BarChart>
-                                    </ResponsiveContainer>
+                                    deptStats.map((dept, idx) => {
+                                        const maxCount = Math.max(...deptStats.map(d => d.count), 1);
+                                        const width = (dept.count / maxCount) * 100;
+                                        return (
+                                            <div key={idx} className="space-y-1">
+                                                <div className="flex justify-between text-xs">
+                                                    <span className="text-gray-300">{dept.fullName}</span>
+                                                    <span className="text-neon-cyan font-mono">{dept.count}</span>
+                                                </div>
+                                                <div className="h-6 bg-black/30 rounded overflow-hidden">
+                                                    <div 
+                                                        className="h-full bg-gradient-to-r from-neon-cyan to-neon-cyan/50 rounded transition-all duration-500"
+                                                        style={{ width: `${width}%` }}
+                                                    />
+                                                </div>
+                                            </div>
+                                        );
+                                    })
                                 ) : (
-                                    <div className="flex items-center justify-center h-full text-gray-500">
+                                    <div className="flex items-center justify-center h-[200px] text-gray-500">
                                         No employee data available
                                     </div>
                                 )}
                             </div>
                         </GlassCard>
 
-                        {/* Salary by Department */}
-                        <GlassCard className="p-6 h-[400px] flex flex-col">
+                        {/* Salary by Department - Simple CSS Chart */}
+                        <GlassCard className="p-6">
                             <h3 className="text-lg font-rajdhani font-bold text-neon-green mb-4 flex items-center gap-2">
                                 <DollarSign size={18} /> Salary by Department
                             </h3>
-                            <div className="flex-1">
+                            <div className="space-y-3">
                                 {salaryByDeptStats.length > 0 ? (
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <BarChart data={salaryByDeptStats} layout="vertical">
-                                            <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-                                            <XAxis type="number" stroke="#888" tickFormatter={(v) => formatCurrency(v)} />
-                                            <YAxis type="category" dataKey="name" stroke="#888" fontSize={10} width={80} />
-                                            <Tooltip
-                                                contentStyle={{ backgroundColor: '#0a0a10', borderColor: '#0aff64' }}
-                                                itemStyle={{ color: '#fff' }}
-                                                formatter={(value: any) => [formatCurrency(value), 'Total Salary']}
-                                                labelFormatter={(label: any) => salaryByDeptStats.find(d => d.name === label)?.fullName || label}
-                                            />
-                                            <Bar dataKey="salary" fill="#0aff64" radius={[0, 4, 4, 0]} />
-                                        </BarChart>
-                                    </ResponsiveContainer>
+                                    salaryByDeptStats.map((dept, idx) => {
+                                        const maxSalary = Math.max(...salaryByDeptStats.map(d => d.salary), 1);
+                                        const width = (dept.salary / maxSalary) * 100;
+                                        return (
+                                            <div key={idx} className="space-y-1">
+                                                <div className="flex justify-between text-xs">
+                                                    <span className="text-gray-300">{dept.fullName}</span>
+                                                    <span className="text-neon-green font-mono">{formatCurrency(dept.salary)}</span>
+                                                </div>
+                                                <div className="h-6 bg-black/30 rounded overflow-hidden">
+                                                    <div 
+                                                        className="h-full bg-gradient-to-r from-neon-green to-neon-green/50 rounded transition-all duration-500"
+                                                        style={{ width: `${width}%` }}
+                                                    />
+                                                </div>
+                                            </div>
+                                        );
+                                    })
                                 ) : (
                                     <div className="flex items-center justify-center h-full text-gray-500">
                                         No salary data available
@@ -256,61 +259,69 @@ export const Statistics: React.FC<StatisticsProps> = ({ onBack }) => {
                             </div>
                         </GlassCard>
 
-                        {/* Monthly Payroll Trend */}
-                        <GlassCard className="p-6 h-[400px] flex flex-col">
+                        {/* Monthly Payroll Trend - Simple CSS Chart */}
+                        <GlassCard className="p-6">
                             <h3 className="text-lg font-rajdhani font-bold text-yellow-500 mb-4 flex items-center gap-2">
                                 <Wallet size={18} /> Monthly Payroll Trend
                             </h3>
-                            <div className="flex-1">
+                            <div className="space-y-3">
                                 {monthlySalaryStats.length > 0 ? (
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <AreaChart data={monthlySalaryStats}>
-                                            <defs>
-                                                <linearGradient id="colorAmount" x1="0" y1="0" x2="0" y2="1">
-                                                    <stop offset="5%" stopColor="#ffd93d" stopOpacity={0.8} />
-                                                    <stop offset="95%" stopColor="#ffd93d" stopOpacity={0} />
-                                                </linearGradient>
-                                            </defs>
-                                            <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-                                            <XAxis dataKey="month" stroke="#888" />
-                                            <YAxis stroke="#888" tickFormatter={(v) => formatCurrency(v)} />
-                                            <Tooltip
-                                                contentStyle={{ backgroundColor: '#0a0a10', borderColor: '#ffd93d' }}
-                                                itemStyle={{ color: '#fff' }}
-                                                formatter={(value: any) => [formatCurrency(value), 'Payroll']}
-                                            />
-                                            <Area type="monotone" dataKey="amount" stroke="#ffd93d" fillOpacity={1} fill="url(#colorAmount)" />
-                                        </AreaChart>
-                                    </ResponsiveContainer>
+                                    <>
+                                        <div className="flex items-end justify-between h-[200px] gap-2">
+                                            {monthlySalaryStats.map((month, idx) => {
+                                                const maxAmount = Math.max(...monthlySalaryStats.map(m => m.amount), 1);
+                                                const height = (month.amount / maxAmount) * 100;
+                                                return (
+                                                    <div key={idx} className="flex-1 flex flex-col items-center justify-end h-full">
+                                                        <div 
+                                                            className={`w-full rounded-t transition-all duration-500 ${month.isCurrent ? 'bg-yellow-500' : 'bg-yellow-500/40'}`}
+                                                            style={{ height: `${height}%` }}
+                                                            title={formatCurrency(month.amount)}
+                                                        />
+                                                        <span className="text-[10px] text-gray-400 mt-2">{month.month}</span>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                        <div className="text-center text-sm text-yellow-500 font-mono">
+                                            Current: {formatCurrency(monthlySalaryStats.find(m => m.isCurrent)?.amount || 0)}
+                                        </div>
+                                    </>
                                 ) : (
-                                    <div className="flex items-center justify-center h-full text-gray-500">
+                                    <div className="flex items-center justify-center h-[200px] text-gray-500">
                                         No payroll data available
                                     </div>
                                 )}
                             </div>
                         </GlassCard>
 
-                        {/* Skill Radar */}
-                        <GlassCard className="p-6 h-[400px] flex flex-col">
+                        {/* Skill Matrix - Simple CSS Chart */}
+                        <GlassCard className="p-6">
                             <h3 className="text-lg font-rajdhani font-bold text-neon-purple mb-4 flex items-center gap-2">
                                 <TrendingUp size={18} /> Skill Matrix
                             </h3>
-                            <div className="flex-1">
+                            <div className="space-y-3">
                                 {skillStats.length > 0 ? (
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <RadarChart cx="50%" cy="50%" outerRadius="80%" data={skillStats}>
-                                            <PolarGrid stroke="#333" />
-                                            <PolarAngleAxis dataKey="subject" stroke="#fff" fontSize={10} />
-                                            <PolarRadiusAxis angle={30} domain={[0, 'auto']} stroke="#888" />
-                                            <Radar name="Skills" dataKey="A" stroke="#bd00ff" fill="#bd00ff" fillOpacity={0.6} />
-                                            <Tooltip
-                                                contentStyle={{ backgroundColor: '#0a0a10', borderColor: '#bd00ff' }}
-                                                itemStyle={{ color: '#fff' }}
-                                            />
-                                        </RadarChart>
-                                    </ResponsiveContainer>
+                                    skillStats.map((skill, idx) => {
+                                        const maxVal = Math.max(...skillStats.map(s => s.A), 1);
+                                        const width = (skill.A / maxVal) * 100;
+                                        return (
+                                            <div key={idx} className="space-y-1">
+                                                <div className="flex justify-between text-xs">
+                                                    <span className="text-gray-300">{skill.subject}</span>
+                                                    <span className="text-neon-purple font-mono">{skill.A}</span>
+                                                </div>
+                                                <div className="h-5 bg-black/30 rounded overflow-hidden">
+                                                    <div 
+                                                        className="h-full bg-gradient-to-r from-neon-purple to-neon-purple/50 rounded transition-all duration-500"
+                                                        style={{ width: `${width}%` }}
+                                                    />
+                                                </div>
+                                            </div>
+                                        );
+                                    })
                                 ) : (
-                                    <div className="flex items-center justify-center h-full text-gray-500">
+                                    <div className="flex items-center justify-center h-[200px] text-gray-500">
                                         No skill data available
                                     </div>
                                 )}

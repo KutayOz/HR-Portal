@@ -4,8 +4,21 @@
 
 @layer base {
   body {
-    @apply bg-[#050505] text-slate-200 overflow-x-hidden;
+    @apply bg-gray-100 dark:bg-[#050505] text-gray-900 dark:text-slate-200 overflow-x-hidden transition-colors duration-300;
   }
+}
+
+/* Light mode scrollbar */
+:root:not(.dark) ::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+:root:not(.dark) ::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+}
+
+:root:not(.dark) ::-webkit-scrollbar-thumb:hover {
+  background: #0891b2;
 }
 
 /* Custom Scrollbar for Webkit */

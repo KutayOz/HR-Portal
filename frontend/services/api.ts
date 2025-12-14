@@ -71,9 +71,7 @@ const fetchApi = async <T>(endpoint: string, options?: RequestInit): Promise<T> 
       const errorData = await response.json().catch(() => ({}));
 
       const baseMessage = errorData.message || `API error: ${response.status} ${response.statusText}`;
-      const details = errorData.error ? `: ${errorData.error}` : '';
-
-      throw new ApiError(`${baseMessage}${details}`, response.status, errorData);
+      throw new ApiError(baseMessage, response.status, errorData);
     }
 
     // Handle empty responses (e.g., 204 No Content or DELETE operations)
@@ -96,17 +94,11 @@ const fetchApi = async <T>(endpoint: string, options?: RequestInit): Promise<T> 
 
 // --- API Functions ---
 export const getEmployees = async (scope?: 'all' | 'yours'): Promise<IEmployee[]> => {
-  try {
-    const result = await fetchApi<IEmployee[]>(withScope('/employees', scope));
-    return Array.isArray(result) ? result : [];
-  } catch (error: any) {
-    if (error?.name === 'AbortError') {
-      console.error('Employee fetch timed out');
-    } else {
-      console.error('Failed to fetch employees:', error);
-    }
-    return [];
+  const result = await fetchApi<IEmployee[]>(withScope('/employees', scope));
+  if (!Array.isArray(result)) {
+    throw new Error('Invalid employees response');
   }
+  return result;
 };
 
 export const getDepartments = async (scope?: 'all' | 'yours'): Promise<IDepartment[]> => {
